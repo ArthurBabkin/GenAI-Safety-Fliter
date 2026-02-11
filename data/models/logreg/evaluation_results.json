@@ -1,0 +1,26 @@
+{
+  "quality": {
+    "precision": 0.927536231884058,
+    "recall": 0.6274509803921569,
+    "f1_score": 0.7485380116959064,
+    "pr_auc": 0.8432426999599703
+  },
+  "confusion_matrix": [
+    [
+      786,
+      10
+    ],
+    [
+      76,
+      128
+    ]
+  ],
+  "latency": {
+    "latency_mean_ms": 0.017801882803905756,
+    "latency_std_ms": 0.0015042534277419084,
+    "latency_min_ms": 0.015649170381948352,
+    "latency_max_ms": 0.02338667050935328
+  },
+  "throughput_samples_per_sec": 58392.2956271822,
+  "peak_memory_mb": 0.0
+}
