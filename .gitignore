@@ -136,7 +136,8 @@ dmypy.json
 *.h5
 *.onnx
 *.bin
-data/
+data/*.csv
+data/original/
 models/
 checkpoints/
 
