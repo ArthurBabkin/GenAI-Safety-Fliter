@@ -104,17 +104,29 @@ The project uses a combined dataset from multiple public sources, totaling **470
 
 ```
 GenAI-Safety-Fliter/
-├── data/                       # Dataset files (not tracked in git)
-│   └── combined_dataset.csv    # Preprocessed combined dataset
+├── data/                           # Dataset files (not tracked in git)
+│   ├── train_dataset.csv           # Combined dataset (470K samples)
+│   └── models/                     # Trained models
+│       ├── tfidf_vectorizer.pkl    # TF-IDF vectorizer
+│       ├── logreg_model.pkl        # Logistic Regression model
+│       └── test_data.pkl           # Test split for evaluation
 ├── docs/
+│   ├── images/                     # Documentation images
+│   │   └── baseline_metrics.png   # Baseline model metrics
 │   └── proposal/
-│       ├── proposal.md         # Project proposal
-│       └── proposal.pdf        # Proposal PDF version
-├── preprocess.ipynb            # Data loading and preprocessing notebook
-├── requirements.txt            # Python dependencies
-├── venv/                       # Virtual environment (not tracked)
+│       ├── proposal.md             # Project proposal
+│       └── proposal.pdf            # Proposal PDF version
+├── model/
+│   ├── __init__.py                 # Package initialization
+│   ├── models.py                   # Model implementations
+│   ├── metrics.py                  # Metrics calculation
+│   └── experiments/
+│       └── tf_idf.ipynb           # TF-IDF baseline experiment
+├── preprocess.ipynb                # Data preprocessing notebook
+├── requirements.txt                # Python dependencies
+├── venv/                           # Virtual environment (not tracked)
 ├── .gitignore
-└── README.md                   # This file
+└── README.md                       # This file
 ```
 
 ## Setup
@@ -146,6 +158,79 @@ pip install -r requirements.txt
 ```bash
 jupyter notebook preprocess.ipynb
 ```
+
+## Usage
+
+### Training Models
+
+Train the baseline TF-IDF + Logistic Regression model:
+
+```bash
+# Start Jupyter
+jupyter notebook model/experiments/tf_idf.ipynb
+```
+
+The notebook will:
+1. Load and split the dataset (80/20 train/test)
+2. Train TF-IDF vectorizer with 10K features
+3. Train Logistic Regression classifier
+4. Save models to `data/models/`
+
+### Using Trained Models
+
+Load and use a trained model:
+
+```python
+from model import LogRegModel
+
+# Load pre-trained model
+model = LogRegModel(
+    vectorizer_path="data/models/tfidf_vectorizer.pkl",
+    model_path="data/models/logreg_model.pkl"
+)
+
+# Predict
+texts = ["You are stupid", "Have a nice day"]
+predictions = model.predict(texts)  # [1, 0]
+probabilities = model.predict_proba(texts)  # [[0.001, 0.999], [0.915, 0.085]]
+```
+
+### Evaluating Models
+
+Get comprehensive metrics using the built-in evaluation:
+
+```python
+# Evaluate on test data
+metrics = model.get_metrics(
+    X_test=test_texts,
+    y_test=test_labels,
+    n_latency_runs=100
+)
+
+# Returns:
+# {
+#   'quality': {'precision': 0.93, 'recall': 0.63, 'f1_score': 0.75, 'pr_auc': 0.84},
+#   'confusion_matrix': [[786, 10], [76, 128]],
+#   'latency': {'latency_mean_ms': 0.017, 'latency_std_ms': 0.001, ...},
+#   'throughput_samples_per_sec': 60314.46,
+#   'peak_memory_mb': 0.0
+# }
+```
+
+### Baseline Results
+
+Our TF-IDF + Logistic Regression baseline achieves:
+
+- **F1-Score:** 0.7485
+- **Precision:** 0.9275
+- **Recall:** 0.6275
+- **PR-AUC:** 0.8432
+- **Throughput:** 60,314 samples/sec
+- **Latency:** 0.017 ms/sample
+
+![Baseline Metrics](docs/images/baseline_metrics.png)
+
+*Figure: Performance metrics for TF-IDF + Logistic Regression baseline model showing quality metrics, confusion matrix, and inference latency.*
 
 ## Timeline
 
