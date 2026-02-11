@@ -130,16 +130,6 @@ dmypy.json
 *~
 .DS_Store
 
-# Models and data
-*.pkl
-*.pth
-*.h5
-*.onnx
-*.bin
-data/original/
-models/
-checkpoints/
-
 # API keys and secrets
 *.key
 secrets.json
