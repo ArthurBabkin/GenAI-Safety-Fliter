@@ -3,8 +3,10 @@ Safety filter model implementations.
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 import numpy as np
+import pickle
+from pathlib import Path
 
 
 class BaseModel(ABC):
@@ -133,3 +135,93 @@ class TransformerClassifier(BaseModel):
             'memory_mb': 256.7,
             'model_size_mb': 220.4
         }
+
+
+class TfIdfLogRegModel(BaseModel):
+    """
+    Real TF-IDF + Logistic Regression implementation.
+    Can load pre-trained models or train from scratch.
+    """
+
+    def __init__(self, vectorizer_path: Optional[str] = None, model_path: Optional[str] = None):
+        """
+        Initialize model.
+
+        Args:
+            vectorizer_path: Path to saved TF-IDF vectorizer (optional)
+            model_path: Path to saved LogReg model (optional)
+        """
+        self.vectorizer = None
+        self.model = None
+
+        if vectorizer_path and model_path:
+            self.load(vectorizer_path, model_path)
+
+    def load(self, vectorizer_path: str, model_path: str):
+        """Load pre-trained model and vectorizer."""
+        with open(vectorizer_path, 'rb') as f:
+            self.vectorizer = pickle.load(f)
+
+        with open(model_path, 'rb') as f:
+            self.model = pickle.load(f)
+
+        print(f"Model loaded from {model_path}")
+        print(f"Vectorizer loaded from {vectorizer_path}")
+
+    def fit(self, X: List[str], y: np.ndarray):
+        """Train new TF-IDF + LogReg model."""
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.linear_model import LogisticRegression
+
+        print("Training TF-IDF vectorizer...")
+        self.vectorizer = TfidfVectorizer(
+            max_features=10000,
+            ngram_range=(1, 2),
+            min_df=5,
+            max_df=0.8
+        )
+
+        X_tfidf = self.vectorizer.fit_transform(X)
+
+        print(f"Training Logistic Regression on {X_tfidf.shape} features...")
+        self.model = LogisticRegression(
+            C=1.0,
+            max_iter=1000,
+            random_state=42,
+            n_jobs=-1
+        )
+
+        self.model.fit(X_tfidf, y)
+        print("Training complete!")
+        return self
+
+    def predict(self, X: List[str]) -> np.ndarray:
+        """Predict binary labels (0=safe, 1=toxic)."""
+        if self.vectorizer is None or self.model is None:
+            raise ValueError("Model not trained or loaded")
+
+        X_tfidf = self.vectorizer.transform(X)
+        return self.model.predict(X_tfidf)
+
+    def predict_proba(self, X: List[str]) -> np.ndarray:
+        """Predict probabilities for each class."""
+        if self.vectorizer is None or self.model is None:
+            raise ValueError("Model not trained or loaded")
+
+        X_tfidf = self.vectorizer.transform(X)
+        return self.model.predict_proba(X_tfidf)
+
+    def save(self, vectorizer_path: str, model_path: str):
+        """Save trained model and vectorizer."""
+        if self.vectorizer is None or self.model is None:
+            raise ValueError("No model to save")
+
+        with open(vectorizer_path, 'wb') as f:
+            pickle.dump(self.vectorizer, f)
+
+        with open(model_path, 'wb') as f:
+            pickle.dump(self.model, f)
+
+        print(f"Model saved to {model_path}")
+        print(f"Vectorizer saved to {vectorizer_path}")
+
