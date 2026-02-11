@@ -150,13 +150,24 @@ class LogRegModel(BaseModel):
         print(f"Model saved to {model_path}")
         print(f"Vectorizer saved to {vectorizer_path}")
 
-    def get_metrics(self) -> dict:
-        """Get model performance metrics."""
-        return {
-            'inference_time_ms': 0.5,
-            'memory_mb': 10.2,
-            'model_size_mb': 5.5
-        }
+    def get_metrics(self, X_test: List[str], y_test: np.ndarray,
+                   n_latency_runs: int = 100) -> dict:
+        """
+        Calculate comprehensive model metrics using MetricsCalculator.
+
+        Args:
+            X_test: Test texts
+            y_test: Test labels
+            n_latency_runs: Number of runs for latency measurement
+
+        Returns:
+            Dictionary with quality and performance metrics
+        """
+        from .metrics import MetricsCalculator
+
+        return MetricsCalculator.evaluate_model(
+            self, X_test, y_test, n_latency_runs
+        )
 
 
 class TransformerClassifier(BaseModel):
@@ -189,11 +200,23 @@ class TransformerClassifier(BaseModel):
         probs = probs / probs.sum(axis=1, keepdims=True)
         return probs
 
-    def get_metrics(self) -> dict:
-        """Get model performance metrics."""
-        return {
-            'inference_time_ms': 15.3,
-            'memory_mb': 256.7,
-            'model_size_mb': 220.4
-        }
+    def get_metrics(self, X_test: List[str], y_test: np.ndarray,
+                   n_latency_runs: int = 100) -> dict:
+        """
+        Calculate comprehensive model metrics using MetricsCalculator.
+
+        Args:
+            X_test: Test texts
+            y_test: Test labels
+            n_latency_runs: Number of runs for latency measurement
+
+        Returns:
+            Dictionary with quality and performance metrics
+        """
+        from .metrics import MetricsCalculator
+
+        return MetricsCalculator.evaluate_model(
+            self, X_test, y_test, n_latency_runs
+        )
+
 
