@@ -6,8 +6,7 @@ from .models import (
     BaseModel,
     TfIdfModel,
     LogRegModel,
-    TransformerClassifier,
-    TfIdfLogRegModel
+    TransformerClassifier
 )
 from .metrics import MetricsCalculator
 
@@ -16,6 +15,5 @@ __all__ = [
     'TfIdfModel',
     'LogRegModel',
     'TransformerClassifier',
-    'TfIdfLogRegModel',
     'MetricsCalculator'
 ]
