@@ -171,34 +171,159 @@ class LogRegModel(BaseModel):
 
 
 class TransformerClassifier(BaseModel):
-    """Transformer-based classifier for toxic comment detection."""
+    """
+    Lightweight Transformer-based classifier for binary toxic/safe classification.
+    Uses HuggingFace pretrained models with a sequence classification head.
+    Can load fine-tuned models or train from scratch.
+    """
 
-    def __init__(self, model_name: str = "distilbert-base-uncased", max_length: int = 128):
+    def __init__(self, model_name: str = "distilbert-base-uncased", max_length: int = 128,
+                 model_dir: Optional[str] = None, batch_size: int = 64):
+        """
+        Initialize model.
+
+        Args:
+            model_name: HuggingFace model identifier for pretrained weights.
+            max_length: Maximum token sequence length.
+            model_dir: Path to saved fine-tuned model directory (optional).
+            batch_size: Batch size for inference.
+        """
         self.model_name = model_name
         self.max_length = max_length
+        self.batch_size = batch_size
+        self.device = "cpu"
         self.model = None
         self.tokenizer = None
 
-    def fit(self, X: List[str], y: np.ndarray):
-        """Fine-tune transformer model on training data."""
-        # Mock implementation
-        print(f"Fine-tuning {self.model_name} with max_length={self.max_length}")
-        print(f"Training samples: {len(X)}")
-        self.tokenizer = "fitted"
-        self.model = "fitted"
+        if model_dir:
+            self.load(model_dir)
+
+    def load(self, model_dir: str):
+        """Load fine-tuned model and tokenizer from directory."""
+        import torch
+        from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_dir)
+        self.model.to(self.device)
+        self.model.eval()
+        print(f"Transformer model loaded from {model_dir}")
+
+    def save(self, model_dir: str):
+        """Save fine-tuned model and tokenizer to directory."""
+        if self.model is None or self.tokenizer is None:
+            raise ValueError("No model to save")
+
+        Path(model_dir).mkdir(parents=True, exist_ok=True)
+        self.model.save_pretrained(model_dir)
+        self.tokenizer.save_pretrained(model_dir)
+        print(f"Transformer model saved to {model_dir}")
+
+    def fit(self, X: List[str], y: np.ndarray, epochs: int = 3,
+            batch_size: int = 32, lr: float = 2e-5):
+        """
+        Fine-tune transformer on training data.
+
+        Args:
+            X: Training texts.
+            y: Binary labels (0=safe, 1=toxic).
+            epochs: Number of training epochs.
+            batch_size: Training batch size.
+            lr: Learning rate for AdamW optimizer.
+        """
+        import torch
+        from torch.utils.data import DataLoader, Dataset
+        from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            self.model_name, num_labels=2
+        )
+        self.model.to(self.device)
+
+        class _TextDataset(Dataset):
+            def __init__(self, texts, labels):
+                self.texts = texts if isinstance(texts, list) else texts.tolist()
+                self.labels = labels
+
+            def __len__(self):
+                return len(self.texts)
+
+            def __getitem__(self, idx):
+                return self.texts[idx], int(self.labels[idx])
+
+        tokenizer_ref = self.tokenizer
+        max_len = self.max_length
+
+        def collate_fn(batch):
+            texts, labels = zip(*batch)
+            encodings = tokenizer_ref(
+                list(texts), truncation=True, padding=True,
+                max_length=max_len, return_tensors="pt"
+            )
+            encodings['labels'] = torch.tensor(labels, dtype=torch.long)
+            return encodings
+
+        dataset = _TextDataset(X, y)
+        loader = DataLoader(dataset, batch_size=batch_size, shuffle=True,
+                            collate_fn=collate_fn)
+
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
+
+        self.model.train()
+        for epoch in range(epochs):
+            total_loss = 0
+            n_batches = 0
+            for batch in loader:
+                batch = {k: v.to(self.device) for k, v in batch.items()}
+                outputs = self.model(**batch)
+                loss = outputs.loss
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                total_loss += loss.item()
+                n_batches += 1
+
+            print(f"Epoch {epoch + 1}/{epochs}, Loss: {total_loss / n_batches:.4f}")
+
+        self.model.eval()
+        print("Training complete!")
         return self
+
+    def _predict_batched(self, X: List[str]):
+        """Run batched inference, return raw logits."""
+        import torch
+
+        if self.model is None or self.tokenizer is None:
+            raise ValueError("Model not trained or loaded")
+
+        all_logits = []
+        for i in range(0, len(X), self.batch_size):
+            batch_texts = X[i:i + self.batch_size]
+            encodings = self.tokenizer(
+                batch_texts, truncation=True, padding=True,
+                max_length=self.max_length, return_tensors="pt"
+            )
+            encodings = {k: v.to(self.device) for k, v in encodings.items()}
+
+            with torch.no_grad():
+                outputs = self.model(**encodings)
+            all_logits.append(outputs.logits.cpu())
+
+        return torch.cat(all_logits, dim=0)
 
     def predict(self, X: List[str]) -> np.ndarray:
         """Predict binary labels (0=safe, 1=toxic)."""
-        # Mock implementation
-        return np.random.randint(0, 2, size=len(X))
+        logits = self._predict_batched(X)
+        return logits.argmax(dim=1).numpy()
 
     def predict_proba(self, X: List[str]) -> np.ndarray:
         """Predict probabilities for each class."""
-        # Mock implementation
-        probs = np.random.rand(len(X), 2)
-        probs = probs / probs.sum(axis=1, keepdims=True)
-        return probs
+        import torch
+        logits = self._predict_batched(X)
+        return torch.softmax(logits, dim=1).numpy()
 
     def get_metrics(self, X_test: List[str], y_test: np.ndarray,
                    n_latency_runs: int = 100) -> dict:
