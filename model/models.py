@@ -227,22 +227,16 @@ class TransformerClassifier(BaseModel):
         print(f"Transformer model saved to {model_dir}")
 
     def fit(self, X: List[str], y: np.ndarray, epochs: int = 3,
-            batch_size: int = 32, lr: float = 2e-5):
-        """
-        Fine-tune transformer on training data.
-
-        Args:
-            X: Training texts.
-            y: Binary labels (0=safe, 1=toxic).
-            epochs: Number of training epochs.
-            batch_size: Training batch size.
-            lr: Learning rate for AdamW optimizer.
-        """
+            batch_size: int = 32, lr: float = 2e-5, warmup_ratio: float = 0.1,
+            max_grad_norm: float = 1.0):
+        """Fine-tune transformer on training data."""
         import torch
         from torch.utils.data import DataLoader, Dataset
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
+        from transformers import get_linear_schedule_with_warmup
+        from tqdm.auto import tqdm
 
-        print(f"Using device: {self.device}")
+        print(f"Device: {self.device}")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(
             self.model_name, num_labels=2
@@ -276,28 +270,36 @@ class TransformerClassifier(BaseModel):
         loader = DataLoader(dataset, batch_size=batch_size, shuffle=True,
                             collate_fn=collate_fn)
 
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
+        total_steps = len(loader) * epochs
+        warmup_steps = int(total_steps * warmup_ratio)
+
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr, weight_decay=0.01)
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps
+        )
 
         self.model.train()
         for epoch in range(epochs):
-            total_loss = 0
-            n_batches = 0
-            for batch in loader:
+            epoch_loss = 0
+            pbar = tqdm(loader, desc=f"Epoch {epoch + 1}/{epochs}")
+            for batch in pbar:
                 batch = {k: v.to(self.device) for k, v in batch.items()}
                 outputs = self.model(**batch)
                 loss = outputs.loss
 
                 optimizer.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_grad_norm)
                 optimizer.step()
+                scheduler.step()
 
-                total_loss += loss.item()
-                n_batches += 1
+                epoch_loss += loss.item()
+                pbar.set_postfix(loss=f"{loss.item():.4f}", lr=f"{scheduler.get_last_lr()[0]:.2e}")
 
-            print(f"Epoch {epoch + 1}/{epochs}, Loss: {total_loss / n_batches:.4f}")
+            avg_loss = epoch_loss / len(loader)
+            print(f"Epoch {epoch + 1}/{epochs} done  avg_loss={avg_loss:.4f}")
 
         self.model.eval()
-        print("Training complete!")
         return self
 
     def _predict_batched(self, X: List[str]):
