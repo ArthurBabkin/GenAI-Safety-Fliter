@@ -112,8 +112,7 @@ class LogRegModel(BaseModel):
         self.model = LogisticRegression(
             C=self.C,
             max_iter=self.max_iter,
-            random_state=42,
-            n_jobs=-1
+            random_state=42
         )
 
         self.model.fit(X_tfidf, y)
@@ -188,12 +187,20 @@ class TransformerClassifier(BaseModel):
             model_dir: Path to saved fine-tuned model directory (optional).
             batch_size: Batch size for inference.
         """
+        import torch
+
         self.model_name = model_name
         self.max_length = max_length
         self.batch_size = batch_size
-        self.device = "cpu"
         self.model = None
         self.tokenizer = None
+
+        if torch.backends.mps.is_available():
+            self.device = "mps"
+        elif torch.cuda.is_available():
+            self.device = "cuda"
+        else:
+            self.device = "cpu"
 
         if model_dir:
             self.load(model_dir)
@@ -207,7 +214,7 @@ class TransformerClassifier(BaseModel):
         self.model = AutoModelForSequenceClassification.from_pretrained(model_dir)
         self.model.to(self.device)
         self.model.eval()
-        print(f"Transformer model loaded from {model_dir}")
+        print(f"Transformer model loaded from {model_dir} (device: {self.device})")
 
     def save(self, model_dir: str):
         """Save fine-tuned model and tokenizer to directory."""
@@ -235,6 +242,7 @@ class TransformerClassifier(BaseModel):
         from torch.utils.data import DataLoader, Dataset
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
+        print(f"Using device: {self.device}")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(
             self.model_name, num_labels=2
