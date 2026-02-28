@@ -38,23 +38,9 @@ The project uses a combined dataset from multiple public sources, totaling **470
 ### Data Sources
 
 1. **Jigsaw Toxic Comment Classification Challenge** ([Kaggle](https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge))
-   - Multilingual, multilabel toxic comment dataset
-   - Converted to binary classification
-
 2. **Russian Language Toxic Comments** ([Kaggle](https://www.kaggle.com/datasets/blackmoon/russian-language-toxic-comments))
-   - Binary labels, Russian-language focus
-
 3. **Toxic Russian Comments** ([Kaggle](https://www.kaggle.com/datasets/alexandersemiletov/toxic-russian-comments))
-   - Multilabel Russian comments, converted to binary
-
 4. **Combined Hate Speech Dataset** ([Kaggle](https://www.kaggle.com/datasets/mahmoudabusaqer/combined-hate-speech-dataset))
-   - English binary classification dataset
-
-### Text Length Distribution
-
-- **Mean:** 190.35 characters
-- **Median:** 77 characters
-- **Range:** 1 - 20,030 characters
 
 ### Language Distribution
 
@@ -62,188 +48,163 @@ The project uses a combined dataset from multiple public sources, totaling **470
 |----------|---------|------------|
 | Russian  | 262,165 | 55.7% |
 | English  | 208,148 | 44.3% |
-| Other    | 9       | 0.0% |
-
-### Data Visualization
 
 ![Data Distribution](data/plots/data_distribution.png)
 
-*Figure: Comprehensive visualization of dataset distribution by source, label balance, text length, and language composition.*
+## Models
 
-## Approach
+Three models are trained and evaluated under identical conditions (80/20 train/test split, same test set of 94K samples).
 
-### Baseline Model
-- **TF-IDF + Logistic Regression**
-- Very low inference latency
-- Minimal memory footprint
-- Strong classical baseline for text classification
+### Results Summary
 
-### Comparison Model
-- **Lightweight Transformer-based classifier**
-- Evaluated under identical conditions
-- Measures inference latency, memory usage, and detection quality
+| Model | F1 | Precision | Recall | PR-AUC | Latency (ms) | Throughput (samples/s) | Size |
+|-------|-----|-----------|--------|--------|---------------|----------------------|------|
+| TF-IDF + LogReg | 0.7485 | 0.9275 | 0.6275 | 0.8432 | 0.018 | 58,392 | ~0.5 MB |
+| DistilBERT (fine-tuned) | 0.8900 | 0.9082 | 0.8725 | 0.9533 | 3.08 | 334 | 255 MB |
+| DistilBERT + LoRA | 0.7632 | 0.8239 | 0.7108 | 0.8534 | 3.15 | 322 | 255 MB |
 
-### Evaluation Metrics
+![Quality Comparison](docs/images/quality_comparison.png)
 
-**Quality:**
-- Precision, Recall, F1-score
-- Precision-Recall AUC (PR-AUC)
-- Confusion matrix
+### 1. TF-IDF + Logistic Regression (Baseline)
 
-**Performance:**
-- Average inference latency per sample (CPU/GPU)
-- Throughput (samples per second)
-- Peak memory usage during inference
-- Model size on disk
+- Classical bag-of-words approach with 10K TF-IDF features (unigrams + bigrams)
+- Extremely fast inference (~58K samples/sec), minimal memory, ~0.5 MB on disk
+- High precision (0.93) but lower recall (0.63) — misses implicit toxicity
 
-**Testing:**
-- Clean test data
-- Obfuscated test data (stress testing)
+### 2. DistilBERT (Full Fine-tuning)
+
+- `distilbert-base-uncased` (67.6M parameters), all parameters trained
+- 3 epochs on 376K samples, lr=2e-5, batch_size=64
+- Best quality (F1=0.89), but ~170x slower than TF-IDF
+- Strong contextual understanding of implicit and multilingual toxicity
+
+### 3. DistilBERT + LoRA (Parameter-Efficient)
+
+- Same base model, but only 665K trainable parameters (0.98% of total)
+- LoRA rank=4, alpha=16, target modules: `q_lin`, `v_lin`
+- 2 epochs on 100K subset, lr=3e-4 — trains ~6x faster than full fine-tuning
+- Achieves 86% of full fine-tuning quality with dramatically lower training cost
+
+![Performance Comparison](docs/images/performance_comparison.png)
 
 ## Project Structure
 
 ```
 GenAI-Safety-Fliter/
-├── data/                           # Dataset files (not tracked in git)
-│   ├── train_dataset.csv           # Combined dataset (470K samples)
-│   └── models/                     # Trained models
-│       ├── tfidf_vectorizer.pkl    # TF-IDF vectorizer
-│       ├── logreg_model.pkl        # Logistic Regression model
-│       └── test_data.pkl           # Test split for evaluation
+├── data/
+│   ├── train_dataset.csv              # Combined dataset (470K samples)
+│   ├── original/                      # Raw source datasets
+│   ├── plots/                         # Data visualization plots
+│   └── models/
+│       ├── logreg/                    # TF-IDF + LogReg artifacts
+│       │   ├── tfidf_vectorizer.pkl
+│       │   ├── logreg_model.pkl
+│       │   ├── test_data.pkl
+│       │   └── evaluation_results.json
+│       ├── transformer/               # DistilBERT fine-tuned
+│       │   ├── model.safetensors
+│       │   ├── config.json
+│       │   ├── tokenizer.json
+│       │   ├── test_data.pkl
+│       │   └── evaluation_results.json
+│       └── transformer_lora/          # DistilBERT + LoRA
+│           ├── model.safetensors
+│           ├── config.json
+│           ├── tokenizer.json
+│           ├── test_data.pkl
+│           └── evaluation_results.json
 ├── docs/
-│   ├── images/                     # Documentation images
-│   │   └── baseline_metrics.png   # Baseline model metrics
-│   └── proposal/
-│       ├── proposal.md             # Project proposal
-│       └── proposal.pdf            # Proposal PDF version
+│   ├── baseline/
+│   │   └── baseline.md                # Baseline report with full analysis
+│   ├── proposal/
+│   │   ├── proposal.md
+│   │   └── proposal.pdf
+│   ├── qualitative_samples.md         # Qualitative error analysis
+│   └── images/                        # Report visualizations
 ├── model/
-│   ├── __init__.py                 # Package initialization
-│   ├── models.py                   # Model implementations
-│   ├── metrics.py                  # Metrics calculation
+│   ├── __init__.py                    # Package exports
+│   ├── models.py                      # Model implementations
+│   ├── metrics.py                     # Evaluation framework
 │   └── experiments/
-│       └── tf_idf.ipynb           # TF-IDF baseline experiment
-├── preprocess.ipynb                # Data preprocessing notebook
-├── requirements.txt                # Python dependencies
-├── venv/                           # Virtual environment (not tracked)
-├── .gitignore
-└── README.md                       # This file
+│       ├── tf_idf.ipynb               # TF-IDF baseline notebook
+│       ├── transformer.ipynb          # DistilBERT fine-tuning notebook
+│       └── transformer_lora.ipynb     # LoRA fine-tuning notebook
+├── preprocess.ipynb                   # Data preprocessing
+├── requirements.txt
+└── README.md
 ```
 
 ## Setup
 
 ### Prerequisites
 - Python 3.11+
-- Virtual environment (recommended)
 
 ### Installation
 
-1. Clone the repository:
 ```bash
 git clone https://github.com/ArthurBabkin/GenAI-Safety-Fliter.git
 cd GenAI-Safety-Fliter
-```
-
-2. Create and activate virtual environment:
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Run the preprocessing notebook:
-```bash
-jupyter notebook preprocess.ipynb
-```
+## Usage
 
-## Usage (Example)
-
-### Training Models
-
-Train the baseline TF-IDF + Logistic Regression model:
-
-```bash
-# Start Jupyter
-jupyter notebook model/experiments/tf_idf.ipynb
-```
-
-The notebook will:
-1. Load and split the dataset (80/20 train/test)
-2. Train TF-IDF vectorizer with 10K features
-3. Train Logistic Regression classifier
-4. Save models to `data/models/`
-
-### Using Trained Models
-
-Load and use a trained model:
+### Loading Pre-trained Models
 
 ```python
-from model import LogRegModel
+from model import LogRegModel, TransformerClassifier, LoRATransformerClassifier
 
-# Load pre-trained model
-model = LogRegModel(
-    vectorizer_path="data/models/tfidf_vectorizer.pkl",
-    model_path="data/models/logreg_model.pkl"
+# TF-IDF + Logistic Regression
+logreg = LogRegModel(
+    vectorizer_path="data/models/logreg/tfidf_vectorizer.pkl",
+    model_path="data/models/logreg/logreg_model.pkl"
 )
 
-# Predict
+# DistilBERT (full fine-tuning)
+bert = TransformerClassifier(model_dir="data/models/transformer")
+
+# DistilBERT + LoRA
+lora = LoRATransformerClassifier(model_dir="data/models/transformer_lora")
+```
+
+### Prediction
+
+```python
 texts = ["You are stupid", "Have a nice day"]
-predictions = model.predict(texts)  # [1, 0]
-probabilities = model.predict_proba(texts)  # [[0.001, 0.999], [0.915, 0.085]]
+
+predictions = logreg.predict(texts)       # [1, 0]
+probabilities = logreg.predict_proba(texts)  # [[p_safe, p_toxic], ...]
 ```
 
-### Evaluating Models
-
-Get comprehensive metrics using the built-in evaluation:
+### Evaluation
 
 ```python
-# Evaluate on test data
-metrics = model.get_metrics(
-    X_test=test_texts,
-    y_test=test_labels,
-    n_latency_runs=100
-)
-
-# Returns:
-# {
-#   'quality': {'precision': 0.93, 'recall': 0.63, 'f1_score': 0.75, 'pr_auc': 0.84},
-#   'confusion_matrix': [[786, 10], [76, 128]],
-#   'latency': {'latency_mean_ms': 0.017, 'latency_std_ms': 0.001, ...},
-#   'throughput_samples_per_sec': 60314.46,
-#   'peak_memory_mb': 0.0
-# }
+metrics = logreg.get_metrics(X_test, y_test, n_latency_runs=100)
+# Returns: quality (precision, recall, f1, pr_auc), confusion_matrix,
+#          latency stats, throughput, peak_memory_mb
 ```
 
-### Baseline Results
+### Training from Scratch
 
-Our TF-IDF + Logistic Regression baseline achieves:
+Run the experiment notebooks in order:
 
-- **F1-Score:** 0.7485
-- **Precision:** 0.9275
-- **Recall:** 0.6275
-- **PR-AUC:** 0.8432
-- **Throughput:** 60,314 samples/sec
-- **Latency:** 0.017 ms/sample
+```bash
+jupyter notebook model/experiments/tf_idf.ipynb
+jupyter notebook model/experiments/transformer.ipynb
+jupyter notebook model/experiments/transformer_lora.ipynb
+```
 
-![Baseline Metrics](docs/images/baseline_metrics.png)
+## Key Findings
 
-*Figure: Performance metrics for TF-IDF + Logistic Regression baseline model showing quality metrics, confusion matrix, and inference latency.*
+- **Speed vs Quality:** A ~19% F1 improvement (0.75 → 0.89) costs ~170x in latency
+- **LoRA Efficiency:** 86% of full fine-tuning quality with 6x faster training and <1% trainable parameters
+- **TF-IDF Strengths:** Best for high-throughput, CPU-only deployments where false negatives are acceptable
+- **Transformer Strengths:** Superior at catching implicit toxicity and context-dependent harmful language
+- **Model Size:** TF-IDF is ~500x smaller on disk (0.5 MB vs 255 MB)
 
-## Timeline
-
-- **Week 2-3:** Dataset selection, preprocessing, proposal submission
-- **Week 4-5:** Implement TF-IDF + Logistic Regression baseline and speed evaluation
-- **Week 6:** Midterm checkpoint (baseline results and initial analysis)
-- **Week 7-8:** Implement Transformer classifier and capacity comparison
-- **Week 9:** Robustness and deobfuscation experiments
-- **Week 10-12:** Final analysis, report writing, reproducibility checks, demo preparation
-
-## License
-
-This project uses publicly available datasets with research-friendly licenses. All dataset licenses and usage constraints are documented in the final report.
+See the full [baseline report](docs/baseline/baseline.md) for detailed analysis, confusion matrices, qualitative examples, and deployment recommendations.
 
 ## References
 
@@ -252,6 +213,4 @@ This project uses publicly available datasets with research-friendly licenses. A
 3. Semiletov, A. *Toxic Russian Comments Dataset*
 4. Abusaqer, M. *Combined Hate Speech Dataset*
 5. Devlin, J., et al. *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.* NAACL-HLT, 2019.
-6. Liu, Y. et al. *RoBERTa: A Robustly Optimized BERT Pretraining Approach.* arXiv:1907.11692, 2019.
-7. Schmidt, A., & Wiegand, M. *A Survey on Hate Speech Detection using Natural Language Processing.* 2017.
-8. Fortuna, P., & Nunes, S. *A Survey on Automatic Detection of Hate Speech in Text.* ACM Computing Surveys, 2018.
+6. Hu, E. J., et al. *LoRA: Low-Rank Adaptation of Large Language Models.* ICLR, 2022.
