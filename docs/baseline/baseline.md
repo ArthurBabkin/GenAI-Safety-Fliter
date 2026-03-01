@@ -1,6 +1,7 @@
 # Baseline Report
 
 **Date:** February 28, 2026 | **Authors:** Arthur Babkin, Alexander Malyy | **Course:** Generative AI, Spring 2026
+**Repo:** [link](https://github.com/ArthurBabkin/GenAI-Safety-Fliter)
 
 We compare three toxic text classifiers on quality, speed, and cost. Dataset: 470K multilingual samples (56% Russian, 44% English, 20% toxic), 80/20 stratified split, `random_state=42`.
 
