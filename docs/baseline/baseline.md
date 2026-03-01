@@ -16,7 +16,7 @@ We compare three toxic text classifiers on quality, speed, and cost. Dataset: 47
 
 **DistilBERT** — `distilbert-base-uncased` (67.6M params), 3 epochs, lr=2e-5 on full 376K training set. Best quality, catches implicit and multilingual toxicity. ~170x slower than TF-IDF.
 
-**DistilBERT + LoRA** — same base model, LoRA r=4/alpha=16 on `q_lin`/`v_lin`. Only 665K trainable params (0.98%). Trained on 100K subset, 2 epochs — 6x faster than full fine-tuning, reaches 86% of its F1.
+**DistilBERT + LoRA** — same base model, LoRA r=4/alpha=16 on `q_lin`/`v_lin`. Only 665K trainable params (0.98%). Trained on 100K subset, 2 epochs — 6x faster than full fine-tuning, reaches 76% of its F1.
 
 ![Quality Metrics](../images/quality_comparison.png)
 
