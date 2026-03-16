@@ -10,6 +10,7 @@ from .models import (
     TransformerClassifier
 )
 from .metrics import MetricsCalculator
+from .utils import seed_everything
 
 __all__ = [
     'BaseModel',
@@ -17,5 +18,6 @@ __all__ = [
     'LogRegModel',
     'LoRATransformerClassifier',
     'TransformerClassifier',
-    'MetricsCalculator'
+    'MetricsCalculator',
+    'seed_everything'
 ]

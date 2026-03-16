@@ -119,25 +119,58 @@ class MetricsCalculator:
         """
         Measure peak memory usage during inference.
 
+        Uses tracemalloc for CPU memory and torch APIs for GPU/MPS memory.
+
         Args:
             model: Trained model instance
             X: List of input texts
 
         Returns:
-            Peak memory usage in MB
+            Peak memory usage in MB (CPU + GPU combined)
         """
-        process = psutil.Process(os.getpid())
+        import tracemalloc
+        import gc
 
-        # Measure memory before
-        mem_before = process.memory_info().rss / 1024 / 1024  # Convert to MB
+        gc.collect()
 
-        # Run inference
+        # Detect device from model
+        device = getattr(model, 'device', 'cpu')
+        gpu_peak_mb = 0.0
+
+        try:
+            import torch
+            if str(device) == 'mps':
+                torch.mps.synchronize()
+                torch.mps.empty_cache()
+                gpu_before = torch.mps.current_allocated_memory()
+            elif str(device).startswith('cuda'):
+                torch.cuda.synchronize()
+                torch.cuda.reset_peak_memory_stats()
+        except ImportError:
+            pass
+
+        # Track CPU memory with tracemalloc
+        tracemalloc.start()
+
         model.predict(X)
 
-        # Measure memory after
-        mem_after = process.memory_info().rss / 1024 / 1024  # Convert to MB
+        _, cpu_peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        cpu_peak_mb = cpu_peak / 1024 / 1024
 
-        return mem_after - mem_before
+        try:
+            import torch
+            if str(device) == 'mps':
+                torch.mps.synchronize()
+                gpu_after = torch.mps.current_allocated_memory()
+                gpu_peak_mb = max(0, gpu_after - gpu_before) / 1024 / 1024
+            elif str(device).startswith('cuda'):
+                torch.cuda.synchronize()
+                gpu_peak_mb = torch.cuda.max_memory_allocated() / 1024 / 1024
+        except (ImportError, NameError):
+            pass
+
+        return cpu_peak_mb + gpu_peak_mb
 
     @staticmethod
     def get_model_size(model_path: str) -> float:
