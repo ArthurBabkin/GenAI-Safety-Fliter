@@ -5,7 +5,6 @@ Metrics calculation for safety filter model evaluation.
 from typing import List, Dict
 import numpy as np
 import time
-import psutil
 import os
 
 
