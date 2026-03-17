@@ -231,6 +231,17 @@ jupyter notebook model/experiments/transformer.ipynb
 jupyter notebook model/experiments/transformer_lora.ipynb
 ```
 
+## Future Work
+
+### Class Imbalance Ablation
+
+The dataset has a ~80/20 safe/toxic split. Current models train with unweighted loss, which biases toward the majority class (visible in LogReg recall of 0.63). Two configurations should be compared:
+
+1. **Balanced dataset** — train on `data/train_dataset_clean_equal_classes_distr.csv` (92,336 safe + 92,336 toxic, random undersampling of the majority class)
+2. **Class weights** — train on the full dataset with loss weighted inversely to class frequency (`weight_toxic ≈ 4.0`)
+
+Both approaches should be evaluated against the current unweighted baseline to isolate the effect of class imbalance handling on recall, precision, and F1.
+
 ## Key Findings
 
 - **Speed vs Quality:** A ~19% F1 improvement (0.75 → 0.89) costs ~170x in latency
