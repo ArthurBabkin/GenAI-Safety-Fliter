@@ -23,7 +23,7 @@ This project aims to build resource-efficient safety mechanisms suitable for CPU
 
 ## Dataset
 
-The project uses a combined dataset from multiple public sources, totaling **470,322 samples** with binary classification (`safe` / `toxic`).
+The project uses a combined dataset from multiple public sources, totaling **470,322 raw samples** (460,303 after cleaning and deduplication) with binary classification (`safe` / `toxic`).
 
 ### Dataset Statistics
 
@@ -50,6 +50,41 @@ The project uses a combined dataset from multiple public sources, totaling **470
 | English  | 208,148 | 44.3% |
 
 ![Data Distribution](data/plots/data_distribution.png)
+
+### Preprocessing
+
+The raw combined dataset (470,322 samples) was cleaned and deduplicated before training.
+
+**Text cleaning** addressed noise introduced by the source datasets:
+
+| Step | What was removed | Rows affected |
+|------|-----------------|---------------|
+| HTML tags & entities | `<br>`, `&amp;`, etc. | 7,998 |
+| URLs | `http://...`, `www....` | 9,763 |
+| Control characters | `\x00–\x1f`, `\x7f–\x9f` | 43 |
+| Whitespace normalization | multiple spaces/newlines → single space | — |
+| Empty rows after cleaning | texts with 0 characters | 10 |
+| CSV double-quote artifacts | `""` → `"` (pandas CSV quoting) | 33,606 |
+| Wikipedia metadata | `(talk)`, `HH:MM, Month DD, YYYY (UTC)` | 3,677 |
+| IP addresses | `192.168.x.x` etc. | 9,777 |
+| Emails | `user@domain.com` | 393 |
+| Unicode replacement chars | `\ufffd` | 10 |
+| Texts ≤ 2 characters | too short to carry signal | 44 |
+
+After cleaning: **470,268 samples** (54 dropped, <0.01%).
+
+**LSH deduplication** was applied using MinHash (128 permutations) across Jaccard thresholds 0.20–0.95 on the full dataset.
+
+![LSH Deduplication](data/plots/lsh_dedup.png)
+
+**Threshold t = 0.80 was selected** based on qualitative inspection of near-duplicate pairs at each threshold:
+
+- **t ≤ 0.65**: removes genuinely different texts that merely share common short phrases or sentence structure — e.g. at t=0.20, two completely unrelated Wikipedia talk messages get paired just because both mention "template". Too aggressive.
+- **t = 0.70–0.75**: begins removing Wikipedia boilerplate entries where only the article name differs (e.g. *"Notability of Rurika Kasuga"* vs *"Notability of Jorge Munoz"* — identical template, different subject). These are true redundancies with the same label and no added signal.
+- **t = 0.80** ✓: removes the same class of boilerplate near-duplicates (e.g. *"Your test worked on Andy Griffith"* vs *"Your test worked on T-Bone Walker"*, Jaccard=0.797) while preserving all meaningfully distinct examples. Drops **9,965 rows (2.1%)**.
+- **t ≥ 0.85**: too conservative — misses large clusters of Wikipedia template spam that differ only by a single article name.
+
+Final dataset after deduplication: **460,303 samples** (97.9% of cleaned data).
 
 ## Models
 
