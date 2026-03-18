@@ -1,26 +1,43 @@
 {
   "quality": {
-    "precision": 0.9081632653061225,
-    "recall": 0.8725490196078431,
-    "f1_score": 0.89,
-    "pr_auc": 0.9532712992287459
+    "precision": 0.9394006170118995,
+    "recall": 0.9233768343531705,
+    "f1_score": 0.9313198066577459,
+    "pr_auc": 0.9781124633345389
   },
   "confusion_matrix": [
     [
-      778,
-      18
+      72494,
+      1100
     ],
     [
-      26,
-      178
+      1415,
+      17052
     ]
   ],
   "latency": {
-    "latency_mean_ms": 3.0811069415998644,
-    "latency_std_ms": 0.11463705062563367,
-    "latency_min_ms": 2.8208812500088243,
-    "latency_max_ms": 3.331912909998209
+    "latency_mean_ms": 3.581065384024987,
+    "latency_std_ms": 0.5501797145892788,
+    "latency_min_ms": 3.0003070802194998,
+    "latency_max_ms": 5.465883750002831
   },
-  "throughput_samples_per_sec": 334.3554420542142,
-  "peak_memory_mb": 0.046875
+  "throughput_samples_per_sec": 287.31191321309245,
+  "peak_memory_mb": 0.4069671630859375,
+  "quality_tuned": {
+    "precision": 0.9430456965394853,
+    "recall": 0.9208317539394596,
+    "f1_score": 0.9318063508589276,
+    "pr_auc": 0.9781124633345389
+  },
+  "best_threshold": 0.5299999999999998,
+  "confusion_matrix_tuned": [
+    [
+      72567,
+      1027
+    ],
+    [
+      1462,
+      17005
+    ]
+  ]
 }
