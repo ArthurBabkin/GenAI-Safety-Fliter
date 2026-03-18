@@ -2,179 +2,21 @@
 
 Fast and resource-efficient safety filters for LLM outputs.
 
-## Project Overview
+**Team:** Arthur Babkin, Alexander Malyy | **Course:** Generative AI, Spring 2026
 
-This project systematically compares classical and neural safety filters under a unified evaluation protocol, focusing on how model capacity, preprocessing, and decision rules affect inference speed, memory usage, and detection quality.
+## Overview
 
-### Team
-- Arthur Babkin
-- Alexander Malyy
+Systematic comparison of classical and neural safety filters for toxic text detection. Three models evaluated on 460K multilingual samples (56% Russian, 44% English):
 
-**Course:** Generative AI, Spring 2026
+| Model | F1 (tuned) | Latency | Throughput |
+|-------|-----------|---------|------------|
+| TF-IDF + LogReg | 0.76 | 0.009 ms | 109K/s |
+| DistilBERT | **0.93** | 3.58 ms | 287/s |
+| DistilBERT + LoRA | 0.79 | 3.27 ms | 316/s |
 
-## Problem Statement
-
-Large language models are commonly deployed with post-generation safety filters that detect harmful or toxic text. The core problem is the **trade-off between speed/resource usage and detection quality**:
-
-- Lightweight models are fast and cheap but may miss subtle harmful content
-- More expressive models achieve higher quality but increase latency, memory usage, and compute cost
-
-This project aims to build resource-efficient safety mechanisms suitable for CPU-only or edge deployments, with specific focus on **Russian-language content**.
-
-## Dataset
-
-The project uses a combined dataset from multiple public sources, totaling **470,322 raw samples** (460,303 after cleaning and deduplication) with binary classification (`safe` / `toxic`).
-
-### Dataset Statistics
-
-| Source | Samples | Toxicity Rate |
-|--------|---------|---------------|
-| Toxic Russian | 248,290 | 17.96% |
-| Jigsaw | 159,571 | 10.17% |
-| Hate Speech | 48,049 | 57.78% |
-| Russian Toxic | 14,412 | 33.49% |
-| **Total** | **470,322** | **19.86%** |
-
-### Data Sources
-
-1. **Jigsaw Toxic Comment Classification Challenge** ([Kaggle](https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge))
-2. **Russian Language Toxic Comments** ([Kaggle](https://www.kaggle.com/datasets/blackmoon/russian-language-toxic-comments))
-3. **Toxic Russian Comments** ([Kaggle](https://www.kaggle.com/datasets/alexandersemiletov/toxic-russian-comments))
-4. **Combined Hate Speech Dataset** ([Kaggle](https://www.kaggle.com/datasets/mahmoudabusaqer/combined-hate-speech-dataset))
-
-### Language Distribution
-
-| Language | Samples | Percentage |
-|----------|---------|------------|
-| Russian  | 262,165 | 55.7% |
-| English  | 208,148 | 44.3% |
-
-![Data Distribution](data/plots/data_distribution.png)
-
-### Preprocessing
-
-The raw combined dataset (470,322 samples) was cleaned and deduplicated before training.
-
-**Text cleaning** addressed noise introduced by the source datasets:
-
-| Step | What was removed | Rows affected |
-|------|-----------------|---------------|
-| HTML tags & entities | `<br>`, `&amp;`, etc. | 7,998 |
-| URLs | `http://...`, `www....` | 9,763 |
-| Control characters | `\x00–\x1f`, `\x7f–\x9f` | 43 |
-| Whitespace normalization | multiple spaces/newlines → single space | — |
-| Empty rows after cleaning | texts with 0 characters | 10 |
-| CSV double-quote artifacts | `""` → `"` (pandas CSV quoting) | 33,606 |
-| Wikipedia metadata | `(talk)`, `HH:MM, Month DD, YYYY (UTC)` | 3,677 |
-| IP addresses | `192.168.x.x` etc. | 9,777 |
-| Emails | `user@domain.com` | 393 |
-| Unicode replacement chars | `\ufffd` | 10 |
-| Texts ≤ 2 characters | too short to carry signal | 44 |
-
-After cleaning: **470,268 samples** (54 dropped, <0.01%).
-
-**LSH deduplication** was applied using MinHash (128 permutations) across Jaccard thresholds 0.20–0.95 on the full dataset.
-
-![LSH Deduplication](data/plots/lsh_dedup.png)
-
-**Threshold t = 0.80 was selected** based on qualitative inspection of near-duplicate pairs at each threshold:
-
-- **t ≤ 0.65**: removes genuinely different texts that merely share common short phrases or sentence structure — e.g. at t=0.20, two completely unrelated Wikipedia talk messages get paired just because both mention "template". Too aggressive.
-- **t = 0.70–0.75**: begins removing Wikipedia boilerplate entries where only the article name differs (e.g. *"Notability of Rurika Kasuga"* vs *"Notability of Jorge Munoz"* — identical template, different subject). These are true redundancies with the same label and no added signal.
-- **t = 0.80** ✓: removes the same class of boilerplate near-duplicates (e.g. *"Your test worked on Andy Griffith"* vs *"Your test worked on T-Bone Walker"*, Jaccard=0.797) while preserving all meaningfully distinct examples. Drops **9,965 rows (2.1%)**.
-- **t ≥ 0.85**: too conservative — misses large clusters of Wikipedia template spam that differ only by a single article name.
-
-Final dataset after deduplication: **460,303 samples** (97.9% of cleaned data).
-
-## Models
-
-Three models are trained and evaluated under identical conditions (80/20 train/test split, same test set of 94K samples).
-
-### Results Summary
-
-| Model | F1 | Precision | Recall | PR-AUC | Latency (ms) | Throughput (samples/s) | Size |
-|-------|-----|-----------|--------|--------|---------------|----------------------|------|
-| TF-IDF + LogReg | 0.7485 | 0.9275 | 0.6275 | 0.8432 | 0.018 | 58,392 | ~0.5 MB |
-| DistilBERT (fine-tuned) | 0.8900 | 0.9082 | 0.8725 | 0.9533 | 3.08 | 334 | 255 MB |
-| DistilBERT + LoRA | 0.7632 | 0.8239 | 0.7108 | 0.8534 | 3.15 | 322 | 255 MB |
-
-![Quality Comparison](docs/images/quality_comparison.png)
-
-### 1. TF-IDF + Logistic Regression (Baseline)
-
-- Classical bag-of-words approach with 10K TF-IDF features (unigrams + bigrams)
-- Extremely fast inference (~58K samples/sec), minimal memory, ~0.5 MB on disk
-- High precision (0.93) but lower recall (0.63) — misses implicit toxicity
-
-### 2. DistilBERT (Full Fine-tuning)
-
-- `distilbert-base-uncased` (67.6M parameters), all parameters trained
-- 3 epochs on 376K samples, lr=2e-5, batch_size=64
-- Best quality (F1=0.89), but ~170x slower than TF-IDF
-- Strong contextual understanding of implicit and multilingual toxicity
-
-### 3. DistilBERT + LoRA (Parameter-Efficient)
-
-- Same base model, but only 665K trainable parameters (0.98% of total)
-- LoRA rank=4, alpha=16, target modules: `q_lin`, `v_lin`
-- 2 epochs on 100K subset, lr=3e-4 — trains ~6x faster than full fine-tuning
-- Achieves 86% of full fine-tuning quality with dramatically lower training cost
-
-![Performance Comparison](docs/images/performance_comparison.png)
-
-## Project Structure
-
-```
-GenAI-Safety-Fliter/
-├── data/
-│   ├── train_dataset.csv              # Combined dataset (470K samples)
-│   ├── original/                      # Raw source datasets
-│   ├── plots/                         # Data visualization plots
-│   └── models/
-│       ├── logreg/                    # TF-IDF + LogReg artifacts
-│       │   ├── tfidf_vectorizer.pkl
-│       │   ├── logreg_model.pkl
-│       │   ├── test_data.pkl
-│       │   └── evaluation_results.json
-│       ├── transformer/               # DistilBERT fine-tuned
-│       │   ├── model.safetensors
-│       │   ├── config.json
-│       │   ├── tokenizer.json
-│       │   ├── test_data.pkl
-│       │   └── evaluation_results.json
-│       └── transformer_lora/          # DistilBERT + LoRA
-│           ├── model.safetensors
-│           ├── config.json
-│           ├── tokenizer.json
-│           ├── test_data.pkl
-│           └── evaluation_results.json
-├── docs/
-│   ├── baseline/
-│   │   └── baseline.md                # Baseline report with full analysis
-│   ├── proposal/
-│   │   ├── proposal.md
-│   │   └── proposal.pdf
-│   ├── qualitative_samples.md         # Qualitative error analysis
-│   └── images/                        # Report visualizations
-├── model/
-│   ├── __init__.py                    # Package exports
-│   ├── models.py                      # Model implementations
-│   ├── metrics.py                     # Evaluation framework
-│   └── experiments/
-│       ├── tf_idf.ipynb               # TF-IDF baseline notebook
-│       ├── transformer.ipynb          # DistilBERT fine-tuning notebook
-│       └── transformer_lora.ipynb     # LoRA fine-tuning notebook
-├── preprocess.ipynb                   # Data preprocessing
-├── requirements.txt
-└── README.md
-```
+See [midterm report](docs/midterm/midterm.md) for full analysis, ablation study, and deployment recommendations.
 
 ## Setup
-
-### Prerequisites
-- Python 3.11+
-
-### Installation
 
 ```bash
 git clone https://github.com/ArthurBabkin/GenAI-Safety-Fliter.git
@@ -186,71 +28,92 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Loading Pre-trained Models
+### Training
 
-```python
-from model import LogRegModel, TransformerClassifier, LoRATransformerClassifier
-
-# TF-IDF + Logistic Regression
-logreg = LogRegModel(
-    vectorizer_path="data/models/logreg/tfidf_vectorizer.pkl",
-    model_path="data/models/logreg/logreg_model.pkl"
-)
-
-# DistilBERT (full fine-tuning)
-bert = TransformerClassifier(model_dir="data/models/transformer")
-
-# DistilBERT + LoRA
-lora = LoRATransformerClassifier(model_dir="data/models/transformer_lora")
-```
-
-### Prediction
-
-```python
-texts = ["You are stupid", "Have a nice day"]
-
-predictions = logreg.predict(texts)       # [1, 0]
-probabilities = logreg.predict_proba(texts)  # [[p_safe, p_toxic], ...]
+```bash
+python -m model.train --model logreg --data data/train_dataset_clean.csv --output data/models/logreg
+python -m model.train --model transformer --data data/train_dataset_clean.csv --output data/models/transformer
+python -m model.train --model transformer_lora --data data/train_dataset_clean.csv --output data/models/transformer_lora --train-subset 100000
 ```
 
 ### Evaluation
 
-```python
-metrics = logreg.get_metrics(X_test, y_test, n_latency_runs=100)
-# Returns: quality (precision, recall, f1, pr_auc), confusion_matrix,
-#          latency stats, throughput, peak_memory_mb
-```
-
-### Training from Scratch
-
-Run the experiment notebooks in order:
-
 ```bash
-jupyter notebook model/experiments/tf_idf.ipynb
-jupyter notebook model/experiments/transformer.ipynb
-jupyter notebook model/experiments/transformer_lora.ipynb
+python -m model.evaluate --model logreg --model-dir data/models/logreg
 ```
 
-## Future Work
+### Inference
 
-### Class Imbalance Ablation
+```python
+from model import LogRegModel, TransformerClassifier, LoRATransformerClassifier
 
-The dataset has a ~80/20 safe/toxic split. Current models train with unweighted loss, which biases toward the majority class (visible in LogReg recall of 0.63). Two configurations should be compared:
+model = TransformerClassifier(model_dir="data/models/transformer")
+predictions = model.predict(["You are stupid", "Have a nice day"])  # [1, 0]
+probabilities = model.predict_proba(["some text"])  # [[p_safe, p_toxic]]
+```
 
-1. **Balanced dataset** — train on `data/train_dataset_clean_equal_classes_distr.csv` (92,336 safe + 92,336 toxic, random undersampling of the majority class)
-2. **Class weights** — train on the full dataset with loss weighted inversely to class frequency (`weight_toxic ≈ 4.0`)
+### Ablations
 
-Both approaches should be evaluated against the current unweighted baseline to isolate the effect of class imbalance handling on recall, precision, and F1.
+Ablation notebooks live under `model/experiments/`. Each loads the global model checkpoint, derives modified training data, and compares against baseline. See [ablation rules](model/experiments/ablation_rules.md) for the full protocol.
 
-## Key Findings
+To promote an ablation's weights to the global checkpoint:
+```bash
+python -m model.promote --from model/experiments/logreg/class_imbalance/data/balanced --to data/models/logreg
+```
 
-- **Speed vs Quality:** A ~19% F1 improvement (0.75 → 0.89) costs ~170x in latency
-- **LoRA Efficiency:** 86% of full fine-tuning quality with 6x faster training and <1% trainable parameters
-- **TF-IDF Strengths:** Best for high-throughput, CPU-only deployments where false negatives are acceptable
-- **Transformer Strengths:** Superior at catching implicit toxicity and context-dependent harmful language
-- **Model Size:** TF-IDF is ~500x smaller on disk (0.5 MB vs 255 MB)
+## Project Structure
 
-See the full [baseline report](docs/baseline/baseline.md) for detailed analysis, confusion matrices, qualitative examples, and deployment recommendations.
+```
+GenAI-Safety-Fliter/
+├── data/
+│   ├── train_dataset_clean.csv          # Cleaned + deduplicated dataset (460K)
+│   ├── original/                        # Raw source datasets
+│   ├── plots/                           # Data visualization plots
+│   └── models/                          # Global model checkpoints (git-lfs)
+│       ├── logreg/                      #   weights + data_splits.pkl + evaluation_results.json
+│       ├── transformer/
+│       └── transformer_lora/
+├── model/
+│   ├── __init__.py
+│   ├── models.py                        # BaseModel, LogRegModel, TransformerClassifier, LoRATransformerClassifier
+│   ├── metrics.py                       # MetricsCalculator (quality, latency, throughput, memory)
+│   ├── utils.py                         # seed_everything
+│   ├── train.py                         # CLI: python -m model.train
+│   ├── evaluate.py                      # CLI: python -m model.evaluate
+│   ├── promote.py                       # CLI: python -m model.promote
+│   └── experiments/
+│       ├── ablation_rules.md            # Protocol for creating ablations
+│       ├── logreg/
+│       │   └── class_imbalance/
+│       │       └── class_imbalance.ipynb
+│       ├── transformer/
+│       │   └── class_imbalance/
+│       │       └── class_imbalance.ipynb
+│       └── transformer_lora/
+│           └── class_imbalance/
+│               └── class_imbalance.ipynb
+├── docs/
+│   ├── proposal/                        # Project proposal
+│   ├── baseline/                        # Baseline report
+│   ├── midterm/                         # Midterm report
+│   └── images/                          # Report plots
+├── preprocess.ipynb                     # Data cleaning + LSH dedup
+├── requirements.txt
+└── README.md
+```
+
+### Key conventions
+
+- **Global checkpoints** (`data/models/`) are trained via CLI and committed to git (weights via git-lfs). Notebooks never train global models.
+- **Ablation outputs** (`model/experiments/**/data/`) are gitignored. Notebooks check for cached results and skip training if present.
+- **Data splits** (`data_splits.pkl`) contain train/val/test arrays. Ablations derive modified training data from the global model's splits, keeping val/test fixed.
+- All seeds fixed at 42.
+
+## Reports
+
+- [Project Proposal](docs/proposal/proposal.md)
+- [Baseline Report](docs/baseline/baseline.md)
+- [Midterm Report](docs/midterm/midterm.md)
 
 ## References
 
@@ -258,5 +121,6 @@ See the full [baseline report](docs/baseline/baseline.md) for detailed analysis,
 2. Blackmoon. *Russian Language Toxic Comments Dataset*
 3. Semiletov, A. *Toxic Russian Comments Dataset*
 4. Abusaqer, M. *Combined Hate Speech Dataset*
-5. Devlin, J., et al. *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.* NAACL-HLT, 2019.
-6. Hu, E. J., et al. *LoRA: Low-Rank Adaptation of Large Language Models.* ICLR, 2022.
+5. Devlin, J., et al. *BERT: Pre-training of Deep Bidirectional Transformers.* NAACL-HLT, 2019.
+6. Sanh, V., et al. *DistilBERT, a distilled version of BERT.* NeurIPS Workshop, 2019.
+7. Hu, E. J., et al. *LoRA: Low-Rank Adaptation of Large Language Models.* ICLR, 2022.
