@@ -45,8 +45,12 @@ def main():
     print(f"Loading {args.model} model from {model_dir}...")
     model = MODEL_CLASSES[args.model](model_dir=str(model_dir))
 
-    # Load test data
-    with open(model_dir / 'test_data.pkl', 'rb') as f:
+    # Load data splits
+    splits_path = model_dir / 'data_splits.pkl'
+    if not splits_path.exists():
+        # Backward compat: try old name
+        splits_path = model_dir / 'test_data.pkl'
+    with open(splits_path, 'rb') as f:
         data = pickle.load(f)
     X_test = data['X_test']
     y_test = data['y_test']
