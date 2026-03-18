@@ -9,7 +9,6 @@ Usage:
 
 import argparse
 import pickle
-import numpy as np
 import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import train_test_split
@@ -33,8 +32,6 @@ def parse_args():
                         help="Path to training CSV (must have 'text' and 'y' columns)")
     parser.add_argument('--output', required=True, type=str,
                         help="Directory to save trained model and test data")
-    parser.add_argument('--balance', action='store_true',
-                        help="Undersample safe class to match toxic count in training set")
     parser.add_argument('--train-subset', type=int, default=None,
                         help="Subsample training data to N rows before splitting")
     parser.add_argument('--seed', type=int, default=42,
@@ -73,19 +70,6 @@ def main():
         X_train_full, y_train_full, test_size=0.1,
         random_state=args.seed, stratify=y_train_full
     )
-
-    # Optional balancing (undersample safe in train only)
-    if args.balance:
-        rng = np.random.RandomState(args.seed)
-        toxic_idx = np.where(y_train == 1)[0]
-        safe_idx = np.where(y_train == 0)[0]
-        n_toxic = len(toxic_idx)
-        safe_sampled = rng.choice(safe_idx, size=n_toxic, replace=False)
-        bal_idx = np.concatenate([safe_sampled, toxic_idx])
-        rng.shuffle(bal_idx)
-        X_train = X_train[bal_idx]
-        y_train = y_train[bal_idx]
-        print(f"Balanced training set: {len(X_train)} samples (toxic: {y_train.mean():.2%})")
 
     print(f"Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
     print(f"Train toxicity rate: {y_train.mean():.2%}")
