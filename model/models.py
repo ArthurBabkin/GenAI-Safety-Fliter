@@ -210,9 +210,11 @@ class TransformerClassifier(BaseModel):
 
     def fit(self, X: List[str], y: np.ndarray, X_val=None, y_val=None,
             epochs: int = 3, batch_size: int = 64, lr: float = 2e-5,
-            warmup_ratio: float = 0.1, max_grad_norm: float = 1.0, patience: int = 2):
+            warmup_ratio: float = 0.1, max_grad_norm: float = 1.0, patience: int = 2,
+            class_weight: bool = False):
         """Fine-tune transformer on training data with optional early stopping."""
         import torch
+        import torch.nn.functional as F
         from torch.utils.data import DataLoader
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
         from transformers import get_linear_schedule_with_warmup
@@ -224,6 +226,13 @@ class TransformerClassifier(BaseModel):
             self.model_name, num_labels=2
         )
         self.model.to(self.device)
+
+        weight_tensor = None
+        if class_weight:
+            from sklearn.utils.class_weight import compute_class_weight
+            cw = compute_class_weight('balanced', classes=np.array([0, 1]), y=y)
+            weight_tensor = torch.tensor(cw, dtype=torch.float).to(self.device)
+            print(f"Class weights: safe={cw[0]:.3f}, toxic={cw[1]:.3f}")
 
         collate_fn = _make_collate_fn(self.tokenizer, self.max_length)
 
@@ -256,8 +265,13 @@ class TransformerClassifier(BaseModel):
             pbar = tqdm(loader, desc=f"Epoch {epoch + 1}/{epochs}")
             for batch in pbar:
                 batch = {k: v.to(self.device) for k, v in batch.items()}
-                outputs = self.model(**batch)
-                loss = outputs.loss
+                if weight_tensor is not None:
+                    labels = batch.pop('labels')
+                    outputs = self.model(**batch)
+                    loss = F.cross_entropy(outputs.logits, labels, weight=weight_tensor)
+                else:
+                    outputs = self.model(**batch)
+                    loss = outputs.loss
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -401,9 +415,11 @@ class LoRATransformerClassifier(BaseModel):
 
     def fit(self, X: List[str], y: np.ndarray, X_val=None, y_val=None,
             epochs: int = 2, batch_size: int = 128, lr: float = 3e-4,
-            warmup_ratio: float = 0.1, max_grad_norm: float = 1.0, patience: int = 1):
+            warmup_ratio: float = 0.1, max_grad_norm: float = 1.0, patience: int = 1,
+            class_weight: bool = False):
         """Fine-tune transformer with LoRA adapters on training data."""
         import torch
+        import torch.nn.functional as F
         from torch.utils.data import DataLoader
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
         from transformers import get_linear_schedule_with_warmup
@@ -427,6 +443,13 @@ class LoRATransformerClassifier(BaseModel):
         self.model = get_peft_model(base_model, lora_config)
         self.model.to(self.device)
         self.model.print_trainable_parameters()
+
+        weight_tensor = None
+        if class_weight:
+            from sklearn.utils.class_weight import compute_class_weight
+            cw = compute_class_weight('balanced', classes=np.array([0, 1]), y=y)
+            weight_tensor = torch.tensor(cw, dtype=torch.float).to(self.device)
+            print(f"Class weights: safe={cw[0]:.3f}, toxic={cw[1]:.3f}")
 
         collate_fn = _make_collate_fn(self.tokenizer, self.max_length)
 
@@ -459,8 +482,13 @@ class LoRATransformerClassifier(BaseModel):
             pbar = tqdm(loader, desc=f"Epoch {epoch + 1}/{epochs}")
             for batch in pbar:
                 batch = {k: v.to(self.device) for k, v in batch.items()}
-                outputs = self.model(**batch)
-                loss = outputs.loss
+                if weight_tensor is not None:
+                    labels = batch.pop('labels')
+                    outputs = self.model(**batch)
+                    loss = F.cross_entropy(outputs.logits, labels, weight=weight_tensor)
+                else:
+                    outputs = self.model(**batch)
+                    loss = outputs.loss
 
                 optimizer.zero_grad()
                 loss.backward()

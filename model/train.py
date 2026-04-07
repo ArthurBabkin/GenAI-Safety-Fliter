@@ -40,6 +40,8 @@ def parse_args():
                         help="Subsample training data to N rows before splitting (only with --data)")
     parser.add_argument('--seed', type=int, default=42,
                         help="Random seed (default: 42)")
+    parser.add_argument('--class-weight', action='store_true',
+                        help="Use class-weighted loss (transformer/transformer_lora only)")
     return parser.parse_args()
 
 
@@ -87,6 +89,9 @@ def main():
     print(f"Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
     print(f"Train toxicity rate: {y_train.mean():.2%}")
 
+    if args.class_weight and args.model == 'logreg':
+        raise ValueError("--class-weight is not supported for logreg")
+
     # Instantiate and train
     model = MODEL_CLASSES[args.model]()
     X_train_list = X_train.tolist() if hasattr(X_train, 'tolist') else list(X_train)
@@ -95,7 +100,8 @@ def main():
     if args.model == 'logreg':
         model.fit(X_train_list, y_train)
     else:
-        model.fit(X_train_list, y_train, X_val=X_val_list, y_val=y_val)
+        model.fit(X_train_list, y_train, X_val=X_val_list, y_val=y_val,
+                  class_weight=args.class_weight)
 
     # Save model
     output_dir = Path(args.output)
