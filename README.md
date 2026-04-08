@@ -56,32 +56,6 @@ probabilities = model.predict_proba(["some text"])  # [[p_safe, p_toxic]]
 
 Ablation notebooks live under `model/experiments/`. Each loads the global model checkpoint, derives modified training data, and compares against baseline. See [ablation rules](model/experiments/ablation_rules.md) for the full protocol.
 
-#### Architecture: LoRA vs Full Finetune (90k)
-
-Both models trained on the same 90k split (LoRA baseline's data). Isolates architecture from data size.
-
-![Architecture ablation](docs/images/90k_dataset_ablation.png)
-
-| Model | F1 | Recall | PR-AUC |
-|-------|-----|--------|--------|
-| LoRA (90k) | 0.7929 | 0.7320 | 0.8853 |
-| Full finetune (90k) | **0.8635** | **0.8241** | **0.9354** |
-
-Full finetune wins by +7.1pp F1 on identical data — the quality gap between LoRA and full finetune in the main comparison is roughly half architecture, half data size.
-
-#### Class Weighting: Full Finetune on 331k
-
-Tests class-weighted loss (~4x weight on toxic) as an alternative to undersampling, keeping the full 331k training set.
-
-![Class weighting ablation](docs/images/class_weighting_ablation.png)
-
-| Model | F1 | Recall | PR-AUC |
-|-------|-----|--------|--------|
-| Baseline (331k) | **0.9318** | **0.9208** | **0.9781** |
-| Class-weighted (331k) | 0.8939 | 0.8818 | 0.9567 |
-
-Class weighting hurt by -3.8pp F1. The full finetune baseline already achieves 92% recall with no bias corrections — there is no majority-class problem to fix. Upweighting the minority class distorted the model's calibration (best threshold shifted from 0.53 to 0.83) without any benefit.
-
 To promote an ablation's weights to the global checkpoint:
 ```bash
 python -m model.promote --from model/experiments/logreg/class_imbalance/data/balanced --to data/models/logreg
@@ -113,15 +87,11 @@ GenAI-Safety-Fliter/
 │       │   └── class_imbalance/
 │       │       └── class_imbalance.ipynb
 │       ├── transformer/
-│       │   ├── class_imbalance/
-│       │   │   └── class_imbalance.ipynb
-│       │   └── class_weighting/
-│       │       └── class_weighting.ipynb
+│       │   └── class_imbalance/
+│       │       └── class_imbalance.ipynb
 │       └── transformer_lora/
-│           ├── class_imbalance/
-│           │   └── class_imbalance.ipynb
-│           └── finetune_vs_lora/
-│               └── finetune_vs_lora.ipynb
+│           └── class_imbalance/
+│               └── class_imbalance.ipynb
 ├── docs/
 │   ├── proposal/                        # Project proposal
 │   ├── baseline/                        # Baseline report
