@@ -10,11 +10,11 @@ Systematic comparison of classical and neural safety filters for toxic text dete
 
 | Model | F1 (tuned) | Latency | Throughput |
 |-------|-----------|---------|------------|
-| TF-IDF + LogReg | 0.76 | 0.009 ms | 109K/s |
+| TF-IDF + LogReg | 0.81 | 0.009 ms | 109K/s |
 | DistilBERT | **0.93** | 3.58 ms | 287/s |
-| DistilBERT + LoRA | 0.79 | 3.27 ms | 316/s |
+| DistilBERT + LoRA | 0.80 | 3.27 ms | 316/s |
 
-See [midterm report](docs/midterm/midterm.md) for full analysis, ablation study, and deployment recommendations.
+See [final report](docs/final/final.md) for full analysis, ablation studies, robustness evaluation, and deployment recommendations.
 
 ## Setup
 
@@ -40,6 +40,14 @@ python -m model.train --model transformer_lora --data data/train_dataset_clean.c
 
 ```bash
 python -m model.evaluate --model logreg --model-dir data/models/logreg
+python -m model.evaluate --model transformer --model-dir data/models/transformer
+python -m model.evaluate --model transformer_lora --model-dir data/models/transformer_lora
+```
+
+### Robustness evaluation
+
+```bash
+python -m model.experiments.robustness.run_evaluation
 ```
 
 ### Inference
@@ -77,25 +85,34 @@ GenAI-Safety-Fliter/
 │   ├── __init__.py
 │   ├── models.py                        # BaseModel, LogRegModel, TransformerClassifier, LoRATransformerClassifier
 │   ├── metrics.py                       # MetricsCalculator (quality, latency, throughput, memory)
+│   ├── obfuscation.py                   # obfuscate_dataset, deobfuscate_dataset
 │   ├── utils.py                         # seed_everything
 │   ├── train.py                         # CLI: python -m model.train
 │   ├── evaluate.py                      # CLI: python -m model.evaluate
 │   ├── promote.py                       # CLI: python -m model.promote
 │   └── experiments/
 │       ├── ablation_rules.md            # Protocol for creating ablations
+│       ├── robustness/                  # Obfuscation stress test + deobfuscation defense
+│       │   ├── robustness.ipynb
+│       │   └── run_evaluation.py        # CLI: python -m model.experiments.robustness.run_evaluation
 │       ├── logreg/
 │       │   └── class_imbalance/
 │       │       └── class_imbalance.ipynb
 │       ├── transformer/
-│       │   └── class_imbalance/
-│       │       └── class_imbalance.ipynb
+│       │   ├── class_imbalance/
+│       │   │   └── class_imbalance.ipynb
+│       │   └── class_weighting/
+│       │       └── class_weighting.ipynb
 │       └── transformer_lora/
-│           └── class_imbalance/
-│               └── class_imbalance.ipynb
+│           ├── class_imbalance/
+│           │   └── class_imbalance.ipynb
+│           └── finetune_vs_lora/
+│               └── finetune_vs_lora.ipynb
 ├── docs/
 │   ├── proposal/                        # Project proposal
 │   ├── baseline/                        # Baseline report
 │   ├── midterm/                         # Midterm report
+│   ├── final/                           # Final report
 │   └── images/                          # Report plots
 ├── preprocess.ipynb                     # Data cleaning + LSH dedup
 ├── requirements.txt
@@ -114,6 +131,7 @@ GenAI-Safety-Fliter/
 - [Project Proposal](docs/proposal/proposal.md)
 - [Baseline Report](docs/baseline/baseline.md)
 - [Midterm Report](docs/midterm/midterm.md)
+- [Final Report](docs/final/final.md)
 
 ## References
 
