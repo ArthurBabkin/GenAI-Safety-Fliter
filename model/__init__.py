@@ -9,6 +9,7 @@ from .models import (
     TransformerClassifier
 )
 from .metrics import MetricsCalculator
+from .obfuscation import obfuscate_dataset, deobfuscate_dataset
 from .utils import seed_everything
 
 __all__ = [
@@ -17,5 +18,7 @@ __all__ = [
     'LoRATransformerClassifier',
     'TransformerClassifier',
     'MetricsCalculator',
-    'seed_everything'
+    'obfuscate_dataset',
+    'deobfuscate_dataset',
+    'seed_everything',
 ]
