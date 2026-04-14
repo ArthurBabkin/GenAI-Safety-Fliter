@@ -10,9 +10,9 @@ Systematic comparison of classical and neural safety filters for toxic text dete
 
 | Model | F1 (tuned) | Latency | Throughput |
 |-------|-----------|---------|------------|
-| TF-IDF + LogReg | 0.81 | 0.009 ms | 109K/s |
+| TF-IDF + LogReg | 0.81 | 0.009 ms | 112K/s |
 | DistilBERT | **0.93** | 3.58 ms | 287/s |
-| DistilBERT + LoRA | 0.80 | 3.27 ms | 316/s |
+| DistilBERT + LoRA | 0.80 | 4.51 ms | 226/s |
 
 See [final report](docs/final/final.md) for full analysis, ablation studies, robustness evaluation, and deployment recommendations.
 
@@ -50,7 +50,13 @@ python -m model.evaluate --model transformer_lora --model-dir data/models/transf
 python -m model.experiments.robustness.run_evaluation
 ```
 
-### Inference
+### Sampling (inference)
+
+```bash
+python -m model.sample --model transformer --model-dir data/models/transformer "You are stupid" "Have a nice day"
+```
+
+Or from Python:
 
 ```python
 from model import LogRegModel, TransformerClassifier, LoRATransformerClassifier
@@ -89,6 +95,7 @@ GenAI-Safety-Fliter/
 │   ├── utils.py                         # seed_everything
 │   ├── train.py                         # CLI: python -m model.train
 │   ├── evaluate.py                      # CLI: python -m model.evaluate
+│   ├── sample.py                        # CLI: python -m model.sample
 │   ├── promote.py                       # CLI: python -m model.promote
 │   └── experiments/
 │       ├── ablation_rules.md            # Protocol for creating ablations

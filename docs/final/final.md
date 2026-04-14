@@ -35,7 +35,7 @@ Text cleaning removed HTML tags/entities (7,998 rows), URLs (9,763), Wikipedia m
 
 MinHash-based Locality-Sensitive Hashing (128 permutations, Jaccard threshold t=0.80) removed 9,965 near-duplicate rows (2.1%). The threshold was selected by qualitative inspection: t=0.80 catches template spam (e.g., Wikipedia boilerplate differing only in article name) while preserving all meaningfully distinct examples.
 
-**Final dataset: 460,303 samples.** Stratified split (seed=42): 80% train / 10% val / 10% test.
+**Final dataset: 460,303 samples.** Two-stage stratified split (seed=42): first 80/20 into train pool (368,242) and test (92,061), then 90/10 within the train pool into train (331,417) and validation (36,825). For LoRA, the train pool is first subsampled to 100K before the 90/10 split, yielding train=90K, val=10K (test remains 92K).
 
 ### 2.3 Obfuscation stress set
 
@@ -70,11 +70,11 @@ All models evaluated on the same 92,061-sample test set (~20% toxic). Decision t
 
 | Model | Precision | Recall | F1 | PR-AUC | Threshold | Latency (ms) | Throughput |
 |-------|-----------|--------|----|--------|-----------|-------------|------------|
-| TF-IDF + LogReg | 0.8346 | 0.7782 | 0.8054 | 0.8820 | 0.62 | 0.009 | 109K/s |
+| TF-IDF + LogReg | 0.8346 | 0.7782 | 0.8054 | 0.8820 | 0.62 | 0.009 | 112K/s |
 | DistilBERT | **0.9430** | **0.9208** | **0.9318** | **0.9781** | 0.53 | 3.58 | 287/s |
-| DistilBERT + LoRA | 0.8360 | 0.7734 | 0.8035 | 0.8911 | 0.77 | 3.27 | 316/s |
+| DistilBERT + LoRA | 0.8360 | 0.7734 | 0.8035 | 0.8911 | 0.77 | 4.51 | 226/s |
 
-DistilBERT dominates on quality: +12.6pp F1 over LogReg, +12.8pp over LoRA. LogReg throughput is ~380x higher than either transformer variant. LoRA's quality is comparable to LogReg but at transformer-level latency, making it a poor trade-off for inference. Its value is in training efficiency: reaching 86% of full fine-tuning quality with 1% of trainable parameters.
+DistilBERT dominates on quality: +12.6pp F1 over LogReg, +12.8pp over LoRA. LogReg throughput is ~390x higher than either transformer variant. LoRA's quality is comparable to LogReg but at transformer-level latency, making it a poor trade-off for inference. Its value is in training efficiency: reaching 86% of full fine-tuning quality with 1% of trainable parameters.
 
 ![Quality comparison](../images/quality_comparison.png)
 *Figure 1. Quality metrics across three models at tuned thresholds.*
@@ -169,9 +169,9 @@ The deobfuscation defense is far more effective for transformers than for TF-IDF
 
 | Model | Config | F1 (clean) | F1 (obfuscated) | F1 (deobfuscated) | Latency | Throughput |
 |-------|--------|-----------|----------------|-------------------|---------|------------|
-| TF-IDF + LogReg | Balanced 133K | 0.8054 | 0.7373 | 0.7555 | 0.009 ms | 109K/s |
+| TF-IDF + LogReg | Balanced 133K | 0.8054 | 0.7373 | 0.7555 | 0.009 ms | 112K/s |
 | DistilBERT | Original 331K | **0.9318** | **0.8395** | **0.9095** | 3.58 ms | 287/s |
-| DistilBERT + LoRA | Balanced 90K | 0.8035 | 0.7283 | 0.7806 | 3.27 ms | 316/s |
+| DistilBERT + LoRA | Balanced 90K | 0.8035 | 0.7283 | 0.7806 | 4.51 ms | 226/s |
 
 ## 6. Deployment recommendations
 
@@ -193,9 +193,30 @@ The obfuscation experiments demonstrate that determined adversaries can degrade 
 
 ## 8. Reproducibility
 
-All random seeds are fixed at 42. Pre-trained model checkpoints and data splits are committed to the repository (model weights via git-lfs).
+All random seeds are fixed at 42. All reported metrics are single-run results; variance across seeds is not reported due to compute constraints (transformer training takes 2-3 hours per run). Pre-trained model checkpoints and data splits are committed to the repository (model weights via git-lfs).
 
-**Training (CLI):**
+### 8.1 Compute environment
+
+| Hardware | Used for |
+|----------|----------|
+| Apple M4 Pro (24 GB) | Main model training, LogReg ablation, DistilBERT class-imbalance ablation, LoRA class-imbalance ablation, robustness evaluation |
+| Apple M1 Max (32 GB) | DistilBERT class-weighting ablation, LoRA vs full fine-tune ablation |
+
+All training runs on CPU/MPS (Apple Silicon). No cloud GPUs were used.
+
+| Experiment | Dataset | Epochs | Wall time | Hardware | Source |
+|------------|---------|--------|-----------|----------|--------|
+| LogReg (balanced) | 133K | — | <1 min | M4 Pro | `logreg/class_imbalance` |
+| DistilBERT class-weighting | 331K | 3 | ~3h 23min | M1 Max | `transformer/class_weighting` |
+| DistilBERT class-imbalance | 133K | 3 | ~1h 53min | M4 Pro | `transformer/class_imbalance` |
+| LoRA class-imbalance (balanced) | 90K | 2 | ~37 min | M4 Pro | `transformer_lora/class_imbalance` |
+| Full fine-tune vs LoRA | 90K | 3 | ~56 min | M1 Max | `transformer_lora/finetune_vs_lora` |
+
+Global model training (via CLI) was not separately timed, but the time derived from the ablations is sufficient to approximate the training time.
+
+### 8.2 Commands
+
+**Training:**
 ```bash
 python -m model.train --model logreg --data data/train_dataset_clean.csv --output data/models/logreg
 python -m model.train --model transformer --data data/train_dataset_clean.csv --output data/models/transformer
@@ -205,6 +226,11 @@ python -m model.train --model transformer_lora --data data/train_dataset_clean.c
 **Evaluation:**
 ```bash
 python -m model.evaluate --model logreg --model-dir data/models/logreg
+```
+
+**Sampling (inference on arbitrary text):**
+```bash
+python -m model.sample --model transformer --model-dir data/models/transformer "You are stupid" "Have a nice day"
 ```
 
 **Robustness evaluation:**
