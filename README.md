@@ -1,6 +1,6 @@
 # GenAI Safety Filter
 
-Fast and resource-efficient safety filters for LLM outputs.
+Fast and resource-efficient toxic-text classifiers benchmarked on a bilingual (Russian + English) social-media corpus. Motivated by — but not evaluated on — LLM output moderation; see the final report §7 for scope and limitations.
 
 **Team:** Arthur Babkin, Alexander Malyy | **Course:** Generative AI, Spring 2026
 
@@ -18,12 +18,24 @@ See [final report](docs/final/final.md) for full analysis, ablation studies, rob
 
 ## Setup
 
+Pre-trained checkpoints and training CSVs are stored in **Git LFS** (~1.1 GB total). You must install and pull LFS before using the repo, or model loading will fail with cryptic deserialization errors.
+
 ```bash
+# 1. One-time per machine
+git lfs install
+
+# 2. Clone + hydrate LFS
 git clone https://github.com/ArthurBabkin/GenAI-Safety-Fliter.git
 cd GenAI-Safety-Fliter
+git lfs pull   # downloads data/**/*.csv and binary checkpoints
+
+# 3. Python env
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# 4. Verify LFS hydration
+bash scripts/verify_artifacts.sh
 ```
 
 ## Usage

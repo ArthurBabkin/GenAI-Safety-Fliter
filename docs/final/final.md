@@ -1,4 +1,4 @@
-# Final Report: Fast and Resource-Efficient Safety Filters for LLM Outputs
+# Final Report: Fast and Resource-Efficient Toxic-Text Classifiers for Bilingual (Russian + English) Corpora
 
 **Authors:** Arthur Babkin, Alexander Malyy | **Course:** Generative AI, Spring 2026
 **Repo:** [github.com/ArthurBabkin/GenAI-Safety-Fliter](https://github.com/ArthurBabkin/GenAI-Safety-Fliter)
@@ -7,11 +7,11 @@
 
 ## 1. Problem statement
 
-Large language models are commonly deployed with post-generation safety filters that detect harmful or toxic text. These filters sit on the critical path of inference: every generated token must pass through them before reaching the user. In production systems, this creates a direct tension between detection quality and inference cost.
+Toxic-text classifiers are used in many deployment scenarios — social-platform moderation, comment filtering, and, increasingly, as post-generation safety filters for large language models. In any of these settings the classifier sits on a latency-sensitive path, creating a direct tension between detection quality and serving cost.
 
-Lightweight models (e.g., TF-IDF + logistic regression) add negligible latency but miss subtle or context-dependent toxicity. More expressive models (e.g., fine-tuned transformers) catch more, but at 100-400x the inference cost. A third axis matters too: adversarial robustness. Users who want to bypass safety filters can obfuscate toxic text with leetspeak, character spacing, or Unicode tricks. A filter that scores well on clean test data may fail in practice if it cannot handle these perturbations.
+Lightweight models (e.g., TF-IDF + logistic regression) add negligible latency but miss subtle or context-dependent toxicity. More expressive models (e.g., fine-tuned transformers) catch more, but at 100-400x the serving cost. A third axis matters too: adversarial robustness. Adversaries can obfuscate toxic text with leetspeak, character spacing, or Unicode tricks. A filter that scores well on clean test data may fail in practice if it cannot handle these perturbations.
 
-This project compares three safety filter architectures under a unified evaluation protocol, measuring quality, speed, and robustness on a multilingual (Russian + English) corpus.
+This project compares three toxic-text classification architectures under a unified evaluation protocol, measuring quality, speed, and robustness on a bilingual (Russian + English) corpus of short user-generated comments. **Scope note:** we evaluate on social-media comment corpora; extension to generated LLM outputs or real user–AI conversation traces is out of scope and is discussed in §7 Limitations.
 
 ## 2. Data
 
@@ -74,7 +74,24 @@ All models evaluated on the same 92,061-sample test set (~20% toxic). Decision t
 | DistilBERT | **0.9430** | **0.9208** | **0.9318** | **0.9781** | 0.53 | 3.58 | 287/s |
 | DistilBERT + LoRA | 0.8360 | 0.7734 | 0.8035 | 0.8911 | 0.77 | 4.51 | 226/s |
 
-DistilBERT dominates on quality: +12.6pp F1 over LogReg, +12.8pp over LoRA. LogReg throughput is ~390x higher than either transformer variant. LoRA's quality is comparable to LogReg but at transformer-level latency, making it a poor trade-off for inference. Its value is in training efficiency: reaching 86% of full fine-tuning quality with 1% of trainable parameters.
+DistilBERT dominates on quality: +12.6pp F1 over LogReg, +12.8pp over LoRA. LogReg throughput is ~390x higher than either transformer variant. LoRA's quality is comparable to LogReg but at transformer-level latency, making it a poor trade-off for serving. Its value is in training efficiency: reaching 86% of full fine-tuning quality with 1% of trainable parameters.
+
+### 4.1 Per-language results (Russian vs English)
+
+The corpus is 56% Russian / 44% English, but the transformer backbone (`distilbert-base-uncased`) was pretrained on English only, lowercases input, and strips accents. Cyrillic text is handled via byte-level WordPiece fallback rather than proper subword tokens. To quantify this mismatch we split the test set by language (source-dataset tags + Cyrillic-codepoint heuristic for ambiguous rows) and recomputed all metrics at the same tuned thresholds as §4.
+
+| Model | Lang | n | Precision | Recall | F1 | PR-AUC | EN–RU F1 gap |
+|-------|------|---|-----------|--------|----|--------|--------------|
+| TF-IDF + LogReg | EN | 39,906 | 0.8387 | 0.8173 | **0.8278** | 0.9068 | — |
+| TF-IDF + LogReg | RU | 52,155 | 0.8308 | 0.7441 | **0.7851** | 0.8596 | **+4.3pp** |
+| DistilBERT | EN | 39,906 | 0.9515 | 0.9219 | **0.9364** | 0.9829 | — |
+| DistilBERT | RU | 52,155 | 0.9358 | 0.9199 | **0.9278** | 0.9742 | **+0.9pp** |
+| DistilBERT + LoRA | EN | 39,906 | 0.8503 | 0.8480 | **0.8491** | 0.9349 | — |
+| DistilBERT + LoRA | RU | 52,155 | 0.8217 | 0.7084 | **0.7608** | 0.8461 | **+8.8pp** |
+
+The result is more nuanced than the English-only-tokenizer hypothesis predicts. DistilBERT with full fine-tuning shows only a 0.9pp EN/RU gap — byte-level WordPiece fallback combined with 67.6M trainable parameters is evidently enough to realign the pretrained representation for Russian. LoRA, by contrast, shows the largest gap (8.8pp): with only ~1% of parameters trainable, LoRA cannot compensate for the English-biased pretrained weights when inputs are Cyrillic. TF-IDF + LogReg lies in between (4.3pp) because character-level features survive script differences but inherit the vocabulary imbalance between the Russian and English training corpora.
+
+**Practical implication.** Full fine-tuning of an English backbone on a bilingual corpus is viable when compute allows; LoRA on the same backbone is not a drop-in substitute for multilingual deployments. A truly multilingual backbone (XLM-RoBERTa, mDeBERTa) remains the principled choice; see §7 Limitations.
 
 ![Quality comparison](../images/quality_comparison.png)
 *Figure 1. Quality metrics across three models at tuned thresholds.*
@@ -175,11 +192,13 @@ The deobfuscation defense is far more effective for transformers than for TF-IDF
 
 ## 6. Deployment recommendations
 
+Recommendations below assume a deployment scenario analogous to our evaluation corpus (short user-generated comments in Russian or English). Generalization to LLM-output moderation or other domains is unverified (§7).
+
 | Use case | Model | Rationale |
 |----------|-------|-----------|
-| Real-time moderation (CPU) | TF-IDF + LogReg | 0.009ms latency, CPU-only, 0.5 MB. Acceptable quality (F1=0.81) when latency budget is <1ms. |
-| Batch safety review | DistilBERT + deobfuscation | Best quality (F1=0.93 clean, 0.91 with defense), 287 samples/sec. Add deobfuscation preprocessor for adversarial robustness at no retraining cost. |
-| Rapid prototyping | LoRA | 6x faster training than full fine-tune, ~1% trainable parameters. Not recommended for inference (transformer-level latency with LogReg-level quality). |
+| Real-time filtering (CPU) | TF-IDF + LogReg | 0.009ms latency, CPU-only, 0.5 MB. Acceptable quality (F1=0.81) when latency budget is <1ms. |
+| Batch safety review | DistilBERT + deobfuscation | Best quality (F1=0.93 clean, 0.91 with defense), 287 samples/sec. Add deobfuscation preprocessor for adversarial robustness at no retraining cost. Full fine-tuning also largely closes the English/Russian gap (§4.1). |
+| Rapid prototyping | LoRA | 6x faster training than full fine-tune, ~1% trainable parameters. Not recommended for production serving: transformer-level latency with LogReg-level quality, and the largest EN/RU gap (§4.1). |
 
 The robustness results add a clear recommendation: any transformer-based deployment should include a deobfuscation preprocessor. It recovers 76% of obfuscation-induced quality loss with zero retraining and negligible additional latency (string operations on CPU). For TF-IDF deployments, the same preprocessor helps less (27% recovery), and the fundamental brittleness of surface-level features remains.
 
