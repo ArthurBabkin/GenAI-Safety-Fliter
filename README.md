@@ -1,6 +1,6 @@
 # GenAI Safety Filter
 
-Fast and resource-efficient toxic-text classifiers benchmarked on a bilingual (Russian + English) social-media corpus. Motivated by — but not evaluated on — LLM output moderation; see the final report §7 for scope and limitations.
+Fast and resource-efficient toxic-text classifiers benchmarked on a bilingual (Russian + English) social-media corpus. LLM output moderation is a motivating deployment scenario but was not evaluated directly; see the final report §7 for scope and limitations.
 
 **Team:** Arthur Babkin, Alexander Malyy | **Course:** Generative AI, Spring 2026
 

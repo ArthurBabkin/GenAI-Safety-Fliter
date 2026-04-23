@@ -7,7 +7,7 @@
 
 ## 1. Problem statement
 
-Toxic-text classifiers are used in many deployment scenarios — social-platform moderation, comment filtering, and, increasingly, as post-generation safety filters for large language models. In any of these settings the classifier sits on a latency-sensitive path, creating a direct tension between detection quality and serving cost.
+Toxic-text classifiers are used across several deployment scenarios: social-platform moderation, comment filtering, and post-generation safety filters for large language models. In each of these settings the classifier sits on a latency-sensitive path, creating a direct tension between detection quality and serving cost.
 
 Lightweight models (e.g., TF-IDF + logistic regression) add negligible latency but miss subtle or context-dependent toxicity. More expressive models (e.g., fine-tuned transformers) catch more, but at 100-400x the serving cost. A third axis matters too: adversarial robustness. Adversaries can obfuscate toxic text with leetspeak, character spacing, or Unicode tricks. A filter that scores well on clean test data may fail in practice if it cannot handle these perturbations.
 
@@ -89,9 +89,9 @@ The corpus is 56% Russian / 44% English, but the transformer backbone (`distilbe
 | DistilBERT + LoRA | EN | 39,906 | 0.8503 | 0.8480 | **0.8491** | 0.9349 | — |
 | DistilBERT + LoRA | RU | 52,155 | 0.8217 | 0.7084 | **0.7608** | 0.8461 | **+8.8pp** |
 
-The result is more nuanced than the English-only-tokenizer hypothesis predicts. DistilBERT with full fine-tuning shows only a 0.9pp EN/RU gap — byte-level WordPiece fallback combined with 67.6M trainable parameters is evidently enough to realign the pretrained representation for Russian. LoRA, by contrast, shows the largest gap (8.8pp): with only ~1% of parameters trainable, LoRA cannot compensate for the English-biased pretrained weights when inputs are Cyrillic. TF-IDF + LogReg lies in between (4.3pp) because character-level features survive script differences but inherit the vocabulary imbalance between the Russian and English training corpora.
+The result is not what the English-only-tokenizer hypothesis predicts. DistilBERT with full fine-tuning shows only a 0.9pp EN/RU gap: byte-level WordPiece fallback combined with 67.6M trainable parameters is enough to realign the pretrained representation for Russian. LoRA shows the largest gap (8.8pp): with only ~1% of parameters trainable, it cannot compensate for the English-biased pretrained weights when inputs are Cyrillic. TF-IDF + LogReg lies in between (4.3pp) because character-level features survive script differences but inherit the vocabulary imbalance between the Russian and English training corpora.
 
-**Practical implication.** Full fine-tuning of an English backbone on a bilingual corpus is viable when compute allows; LoRA on the same backbone is not a drop-in substitute for multilingual deployments. A truly multilingual backbone (XLM-RoBERTa, mDeBERTa) remains the principled choice; see §7 Limitations.
+**Practical implication.** Full fine-tuning of an English backbone on a bilingual corpus is viable when compute allows; LoRA on the same backbone is not a drop-in substitute for multilingual deployments. A multilingual backbone such as XLM-RoBERTa or mDeBERTa would avoid the EN/RU gap by design; see §7 Limitations.
 
 ![Quality comparison](../images/quality_comparison.png)
 *Figure 1. Quality metrics across three models at tuned thresholds.*
@@ -202,7 +202,23 @@ Recommendations below assume a deployment scenario analogous to our evaluation c
 
 The robustness results add a clear recommendation: any transformer-based deployment should include a deobfuscation preprocessor. It recovers 76% of obfuscation-induced quality loss with zero retraining and negligible additional latency (string operations on CPU). For TF-IDF deployments, the same preprocessor helps less (27% recovery), and the fundamental brittleness of surface-level features remains.
 
-## 7. Ethics and safety considerations
+## 7. Limitations
+
+**Evaluation domain mismatch.** All three corpora contain short user-generated social-media comments. The title framing around LLM safety is motivational only: we did not evaluate on generated LLM outputs or real user–AI conversation traces. Transfer across that domain shift (style, length distribution, prompt-conditioned toxicity) is unverified.
+
+**English-centric transformer backbone.** `distilbert-base-uncased` was pretrained on English text, lowercases input, and strips accents; Cyrillic is handled via byte-level WordPiece fallback. We quantified the resulting EN/RU gap per model in §4.1. Full fine-tuning absorbs most of the mismatch (0.9pp gap), but the LoRA variant does not (8.8pp gap). A multilingual backbone such as XLM-RoBERTa or mDeBERTa would avoid this mismatch at the source; time constraints precluded retraining within the project window.
+
+**Single-seed training.** Each checkpoint was trained once. No variance across training seeds is reported, so small between-model differences should be treated as indicative only. Differences larger than ~2pp F1 are consistent with the ~12pp gap between DistilBERT and the other two models and are unlikely to be seed noise, but we do not claim statistical significance for the smaller ablation deltas.
+
+**Adversarial scope.** Robustness was measured against four rule-based obfuscation families (character substitution, leetspeak, spacing, Cyrillic↔Latin homoglyphs). We did not evaluate against paraphrase attacks, semantic rewording, or model-generated adversarial examples. The 76%/27% deobfuscation recovery numbers in §5.4 are contingent on the obfuscation family being known; novel obfuscation strategies would require re-engineering the normalizer.
+
+**Binary label collapse.** All four datasets were merged under a single binary safe/toxic label. Severity, target (targeted vs general hostility), and context (irony, quotation, counter-speech) are discarded. Annotation guidelines also differ across the four source datasets; we did not cross-dataset-calibrate labels. Some residual disagreement on the validation set likely reflects definition drift rather than model error.
+
+**Deobfuscation defense is rule-based.** The defense in §5.4 is a hand-written normalizer. It is effective against the obfuscation family we test against and is near-free at serving time, but it will not generalize automatically to novel evasion strategies. A learned deobfuscation module is future work.
+
+**No latency CIs.** Latency/throughput numbers in §4 are single-run means on Apple Silicon CPU. Real deployment on different hardware, batch sizes, or concurrent load will differ.
+
+## 8. Ethics and safety considerations
 
 Safety filters can be misused for excessive censorship or used to suppress legitimate speech. This project focuses on the performance characteristics of different filter architectures, not on policy decisions about what content should be filtered. The choice of filtering threshold and the definition of "toxic" are deployment decisions that depend on context.
 
@@ -210,11 +226,11 @@ The training datasets contain offensive and harmful language by design. No priva
 
 The obfuscation experiments demonstrate that determined adversaries can degrade filter quality by 7-9pp F1 with simple text transforms. This is a known limitation of text classifiers. The deobfuscation defense recovers most of the lost quality for transformer models but is not a complete solution: more sophisticated evasion techniques (semantic paraphrasing, adversarial perturbations) are outside the scope of this work.
 
-## 8. Reproducibility
+## 9. Reproducibility
 
 All random seeds are fixed at 42. All reported metrics are single-run results; variance across seeds is not reported due to compute constraints (transformer training takes 2-3 hours per run). Pre-trained model checkpoints and data splits are committed to the repository (model weights via git-lfs).
 
-### 8.1 Compute environment
+### 9.1 Compute environment
 
 | Hardware | Used for |
 |----------|----------|
@@ -233,7 +249,7 @@ All training runs on CPU/MPS (Apple Silicon). No cloud GPUs were used.
 
 Global model training (via CLI) was not separately timed, but the time derived from the ablations is sufficient to approximate the training time.
 
-### 8.2 Commands
+### 9.2 Commands
 
 **Training:**
 ```bash
