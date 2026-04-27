@@ -158,7 +158,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="problem">Problem</h2>
 <p>Toxic-text filters sit on latency-sensitive paths. Three axes in tension:</p>
 <div class="axes">
@@ -249,7 +249,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="data">Data</h2>
 <div class="stats">
 <div class="stat"><span class="num">460K</span><span class="lbl">samples (after LSH dedup)</span></div>
@@ -339,7 +339,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="approach-three-architectures-one-protocol">Approach: three architectures, one protocol</h2>
 <table>
 <thead>
@@ -445,7 +445,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="headline-results">Headline results</h2>
 <p><img src="../images/quality_comparison.png" alt="" style="width:680px;" /></p>
 <table>
@@ -552,7 +552,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="speed-vs-quality-tradeoff">Speed vs quality tradeoff</h2>
 <p><img src="../images/performance_comparison.png" alt="" style="width:820px;" /></p>
 <p>LoRA stuck in the <strong>worst quadrant</strong>: transformer latency, LogReg-level quality. Training efficiency only.</p>
@@ -629,7 +629,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="per-language-russian-vs-english">Per-language: Russian vs English</h2>
 <table>
 <thead>
@@ -736,7 +736,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="ablations-overview">Ablations: overview</h2>
 <p>Four ablation studies, all evaluated under the same protocol as the main results:</p>
 <table>
@@ -849,7 +849,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="ablation-1-class-imbalance-undersampling">Ablation 1: class imbalance (undersampling)</h2>
 <table>
 <thead>
@@ -966,7 +966,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="ablation-2-class-weighting-hurts-full-ft">Ablation 2: class weighting hurts full FT</h2>
 <p><img src="../images/class_weighting_ablation.png" alt="" style="width:760px;" /></p>
 <p>DistilBERT @ 331K with 4× weight on toxic class: F1 <strong>–3.8pp</strong> (0.9318 → 0.8939) · PR-AUC <strong>–2.1pp</strong> · threshold drifts <strong>0.53 → 0.83</strong>. No majority-class bias to correct → gradient distortion breaks calibration. Both undersampling (–4.7pp) and weighting (–3.8pp) assume imbalance hurts; for full FT on 331K that assumption is wrong.</p>
@@ -1043,7 +1043,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="ablation-3-lora-vs-full-ft-on-same-90k">Ablation 3: LoRA vs full FT on same 90K</h2>
 <p><img src="../images/90k_dataset_ablation.png" alt="" style="width:760px;" /></p>
 <table>
@@ -1154,7 +1154,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="ablation-4-robustness-under-obfuscation">Ablation 4: robustness under obfuscation</h2>
 <p><img src="../images/robustness_f1_degradation.png" alt="" style="width:620px;" /></p>
 <table>
@@ -1265,7 +1265,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="deployment-recommendations">Deployment recommendations</h2>
 <table>
 <thead>
@@ -1367,7 +1367,7 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="limitations">Limitations</h2>
 <ul>
 <li><strong>Domain mismatch.</strong> Social-media comments only. LLM-output moderation unverified.</li>
@@ -1450,12 +1450,107 @@ table { margin-top: 14px; }
 .bar-label .toxic { background: #d86060; }
 ul { margin: 6px 0; }
 li { margin: 4px 0; }
-;" data-marpit-pagination-total="15" data-size="16:9">
+;" data-marpit-pagination-total="16" data-size="16:9">
 <h2 id="takeaways">Takeaways</h2>
 <p><strong>1.</strong> Full fine-tuning dominates on quality (F1 0.93) <em>and</em> closes the RU/EN gap.</p>
 <p><strong>2.</strong> LoRA isn't a drop-in substitute: worst-quadrant latency/quality, largest language gap.</p>
 <p><strong>3.</strong> A free preprocessor recovers 76% of obfuscation loss on transformers.</p>
 <p><strong>Repo:</strong> <code>github.com/ArthurBabkin/GenAI-Safety-Fliter</code> · full report in <code>docs/final/final.md</code></p>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="16" data-paginate="true" data-theme="default" data-style="section {
+  font-size: 22px;
+  padding: 40px 60px;
+}
+h1 { font-size: 42px; margin-top: 0; }
+h2 { font-size: 32px; margin-top: 0; margin-bottom: 18px; }
+h3 { font-size: 26px; }
+table { font-size: 19px; margin: 8px auto; border-collapse: collapse; }
+th, td { padding: 6px 12px; }
+th { background: #f0f0f0; }
+img { display: block; margin: 4px auto 24px; }
+img + p, p:has(+ table) { margin-top: 14px; }
+table { margin-top: 14px; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+.small { font-size: 18px; color: #555; }
+.axes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 30px; }
+.axis { padding: 18px; border-left: 4px solid #2a6; background: #f7faf5; }
+.axis b { font-size: 22px; color: #2a6; }
+.axis.blue { border-color: #269; background: #f5f8fb; }
+.axis.blue b { color: #269; }
+.axis.red { border-color: #c44; background: #fbf5f5; }
+.axis.red b { color: #c44; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 30px 0 20px; }
+.stat { text-align: center; padding: 20px 10px; background: #f5f7fa; border-radius: 8px; }
+.stat .num { font-size: 34px; font-weight: 700; color: #269; display: block; }
+.stat .lbl { font-size: 17px; color: #555; margin-top: 6px; display: block; }
+.bar { display: grid; margin: 12px auto; width: 75%; height: 38px; border-radius: 6px; overflow: hidden; font-weight: 700; color: white; }
+.bar &gt; div { display: flex; align-items: center; justify-content: center; }
+.bar-lang { grid-template-columns: 55.7fr 44.3fr; }
+.bar-lang .ru { background: #9466cc; }
+.bar-lang .en { background: #5588bb; }
+.bar-label { grid-template-columns: 80.1fr 19.9fr; height: 30px; font-size: 16px; }
+.bar-label .safe { background: #5cb070; }
+.bar-label .toxic { background: #d86060; }
+ul { margin: 6px 0; }
+li { margin: 4px 0; }
+" lang="en-US" data-marpit-pagination="16" style="--paginate:true;--theme:default;--style:section {
+  font-size: 22px;
+  padding: 40px 60px;
+}
+h1 { font-size: 42px; margin-top: 0; }
+h2 { font-size: 32px; margin-top: 0; margin-bottom: 18px; }
+h3 { font-size: 26px; }
+table { font-size: 19px; margin: 8px auto; border-collapse: collapse; }
+th, td { padding: 6px 12px; }
+th { background: #f0f0f0; }
+img { display: block; margin: 4px auto 24px; }
+img + p, p:has(+ table) { margin-top: 14px; }
+table { margin-top: 14px; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+.small { font-size: 18px; color: #555; }
+.axes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 30px; }
+.axis { padding: 18px; border-left: 4px solid #2a6; background: #f7faf5; }
+.axis b { font-size: 22px; color: #2a6; }
+.axis.blue { border-color: #269; background: #f5f8fb; }
+.axis.blue b { color: #269; }
+.axis.red { border-color: #c44; background: #fbf5f5; }
+.axis.red b { color: #c44; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin: 30px 0 20px; }
+.stat { text-align: center; padding: 20px 10px; background: #f5f7fa; border-radius: 8px; }
+.stat .num { font-size: 34px; font-weight: 700; color: #269; display: block; }
+.stat .lbl { font-size: 17px; color: #555; margin-top: 6px; display: block; }
+.bar { display: grid; margin: 12px auto; width: 75%; height: 38px; border-radius: 6px; overflow: hidden; font-weight: 700; color: white; }
+.bar &gt; div { display: flex; align-items: center; justify-content: center; }
+.bar-lang { grid-template-columns: 55.7fr 44.3fr; }
+.bar-lang .ru { background: #9466cc; }
+.bar-lang .en { background: #5588bb; }
+.bar-label { grid-template-columns: 80.1fr 19.9fr; height: 30px; font-size: 16px; }
+.bar-label .safe { background: #5cb070; }
+.bar-label .toxic { background: #d86060; }
+ul { margin: 6px 0; }
+li { margin: 4px 0; }
+;" data-marpit-pagination-total="16" data-size="16:9">
+<h2 id="team-contributions">Team contributions</h2>
+<div class="cols">
+<div>
+<h3 id="arthur-babkin">Arthur Babkin</h3>
+<ul>
+<li>Collected data, prepared dataset</li>
+<li>Baseline TF-IDF implementation</li>
+<li>Ablation 2 (class weighting)</li>
+<li>Ablation 3 (LoRA vs full FT @ 90K)</li>
+</ul>
+</div>
+<div>
+<h3 id="alexander-malyy">Alexander Malyy</h3>
+<ul>
+<li>Baseline DistilBERT + LoRA implementation</li>
+<li>Code refactor, unified methodology</li>
+<li>Ablation 1 (class imbalance)</li>
+<li>Ablation 4 (robustness + deobfuscation)</li>
+</ul>
+</div>
+</div>
 </section>
 <script>!function(){"use strict";const t={h1:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"1"},style:"display: block; font-size: 2em; margin-block-start: 0.67em; margin-block-end: 0.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h2:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"2"},style:"display: block; font-size: 1.5em; margin-block-start: 0.83em; margin-block-end: 0.83em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h3:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"3"},style:"display: block; font-size: 1.17em; margin-block-start: 1em; margin-block-end: 1em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h4:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"4"},style:"display: block; margin-block-start: 1.33em; margin-block-end: 1.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h5:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"5"},style:"display: block; font-size: 0.83em; margin-block-start: 1.67em; margin-block-end: 1.67em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},h6:{proto:()=>HTMLHeadingElement,attrs:{role:"heading","aria-level":"6"},style:"display: block; font-size: 0.67em; margin-block-start: 2.33em; margin-block-end: 2.33em; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;"},span:{proto:()=>HTMLSpanElement},pre:{proto:()=>HTMLElement,style:"display: block; font-family: monospace; white-space: pre; margin: 1em 0; --marp-auto-scaling-white-space: pre;"}},e="data-marp-auto-scaling-wrapper",i="data-marp-auto-scaling-svg",n="data-marp-auto-scaling-container";class s extends HTMLElement{container;containerSize;containerObserver;svg;svgComputedStyle;svgPreserveAspectRatio="xMinYMid meet";wrapper;wrapperSize;wrapperObserver;constructor(){super();const t=t=>([e])=>{const{width:i,height:n}=e.contentRect;this[t]={width:i,height:n},this.updateSVGRect()};this.attachShadow({mode:"open"}),this.containerObserver=new ResizeObserver(t("containerSize")),this.wrapperObserver=new ResizeObserver((...e)=>{t("wrapperSize")(...e),this.flushSvgDisplay()})}static get observedAttributes(){return["data-downscale-only"]}connectedCallback(){this.shadowRoot.innerHTML=`\n<style>\n  svg[${i}] { display: block; width: 100%; height: auto; vertical-align: top; }\n  span[${n}] { display: table; white-space: var(--marp-auto-scaling-white-space, nowrap); width: max-content; }\n</style>\n<div ${e}>\n  <svg part="svg" ${i}>\n    <foreignObject><span ${n}><slot></slot></span></foreignObject>\n  </svg>\n</div>\n    `.split(/\n\s*/).join(""),this.wrapper=this.shadowRoot.querySelector(`div[${e}]`)??void 0;const t=this.svg;this.svg=this.wrapper?.querySelector(`svg[${i}]`)??void 0,this.svg!==t&&(this.svgComputedStyle=this.svg?window.getComputedStyle(this.svg):void 0),this.container=this.svg?.querySelector(`span[${n}]`)??void 0,this.observe()}disconnectedCallback(){this.svg=void 0,this.svgComputedStyle=void 0,this.wrapper=void 0,this.container=void 0,this.observe()}attributeChangedCallback(){this.observe()}flushSvgDisplay(){const{svg:t}=this;t&&(t.style.display="inline",requestAnimationFrame(()=>{t.style.display=""}))}observe(){this.containerObserver.disconnect(),this.wrapperObserver.disconnect(),this.wrapper&&this.wrapperObserver.observe(this.wrapper),this.container&&this.containerObserver.observe(this.container),this.svgComputedStyle&&this.observeSVGStyle(this.svgComputedStyle)}observeSVGStyle(t){const e=()=>{const i=(()=>{const e=t.getPropertyValue("--preserve-aspect-ratio");if(e)return e.trim();return`x${(({textAlign:t,direction:e})=>{if(t.endsWith("left"))return"Min";if(t.endsWith("right"))return"Max";if("start"===t||"end"===t){let i="rtl"===e;return"end"===t&&(i=!i),i?"Max":"Min"}return"Mid"})(t)}YMid meet`})();i!==this.svgPreserveAspectRatio&&(this.svgPreserveAspectRatio=i,this.updateSVGRect()),t===this.svgComputedStyle&&requestAnimationFrame(e)};e()}updateSVGRect(){let t=Math.ceil(this.containerSize?.width??0);const e=Math.ceil(this.containerSize?.height??0);void 0!==this.dataset.downscaleOnly&&(t=Math.max(t,this.wrapperSize?.width??0));const i=this.svg?.querySelector(":scope > foreignObject");if(i?.setAttribute("width",`${t}`),i?.setAttribute("height",`${e}`),this.svg&&(this.svg.setAttribute("viewBox",`0 0 ${t} ${e}`),this.svg.setAttribute("preserveAspectRatio",this.svgPreserveAspectRatio),this.svg.style.height=t<=0||e<=0?"0":""),this.container){const t=this.svgPreserveAspectRatio.toLowerCase();this.container.style.marginLeft=t.startsWith("xmid")||t.startsWith("xmax")?"auto":"0",this.container.style.marginRight=t.startsWith("xmi")?"auto":"0"}}}const r=(t,{attrs:e={},style:i})=>class extends t{constructor(...t){super(...t);for(const[t,i]of Object.entries(e))this.hasAttribute(t)||this.setAttribute(t,i);this._shadow()}static get observedAttributes(){return["data-auto-scaling"]}connectedCallback(){this._update()}attributeChangedCallback(){this._update()}_shadow(){if(!this.shadowRoot)try{this.attachShadow({mode:"open"})}catch(t){if(!(t instanceof Error&&"NotSupportedError"===t.name))throw t}return this.shadowRoot}_update(){const t=this._shadow();if(t){const e=i?`<style>:host { ${i} }</style>`:"";let n="<slot></slot>";const{autoScaling:s}=this.dataset;if(void 0!==s){n=`<marp-auto-scaling exportparts="svg:auto-scaling" ${"downscale-only"===s?"data-downscale-only":""}>${n}</marp-auto-scaling>`}t.innerHTML=e+n}}};let o;const a=Symbol(),l=()=>o??(o=!!document.createElement("div",{is:"marp-auto-scaling"}).outerHTML.startsWith("<div is"),o);let c;const d="marpitSVGPolyfill:setZoomFactor,",h=Symbol(),g=Symbol();const p=()=>{const t="Apple Computer, Inc."===navigator.vendor,e=t?[v]:[],i={then:e=>(t?(async()=>{if(void 0===c){const t=document.createElement("canvas");t.width=10,t.height=10;const e=t.getContext("2d"),i=new Image(10,10),n=new Promise(t=>{i.addEventListener("load",()=>t())});i.crossOrigin="anonymous",i.src="data:image/svg+xml;charset=utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%20viewBox%3D%220%200%201%201%22%3E%3CforeignObject%20width%3D%221%22%20height%3D%221%22%20requiredExtensions%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%3E%3Cdiv%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxhtml%22%20style%3D%22width%3A%201px%3B%20height%3A%201px%3B%20background%3A%20red%3B%20position%3A%20relative%22%3E%3C%2Fdiv%3E%3C%2FforeignObject%3E%3C%2Fsvg%3E",await n,e.drawImage(i,0,0),c=e.getImageData(5,5,1,1).data[3]<128}return c})().then(t=>{null==e||e(t?[v]:[])}):null==e||e([]),i)};return Object.assign(e,i)};let m,u;function v(t){const e="object"==typeof t&&t.target||document,i="object"==typeof t?t.zoom:t;window[g]||(Object.defineProperty(window,g,{configurable:!0,value:!0}),document.body.style.zoom=1.0001,document.body.offsetHeight,document.body.style.zoom=1,window.addEventListener("message",({data:t,origin:e})=>{if(e===window.origin)try{if(t&&"string"==typeof t&&t.startsWith(d)){const[,e]=t.split(","),i=Number.parseFloat(e);Number.isNaN(i)||(u=i)}}catch(t){console.error(t)}}));let n=!1;Array.from(e.querySelectorAll("svg[data-marpit-svg]"),t=>{var e,s,r,o;t.style.transform||(t.style.transform="translateZ(0)");const a=i||u||t.currentScale||1;m!==a&&(m=a,n=a);const l=t.getBoundingClientRect(),{length:c}=t.children;for(let i=0;i<c;i+=1){const n=t.children[i];if(n.getScreenCTM){const t=n.getScreenCTM();if(t){const i=null!==(s=null===(e=n.x)||void 0===e?void 0:e.baseVal.value)&&void 0!==s?s:0,c=null!==(o=null===(r=n.y)||void 0===r?void 0:r.baseVal.value)&&void 0!==o?o:0,d=n.children.length;for(let e=0;e<d;e+=1){const s=n.children[e];if("SECTION"===s.tagName){const{style:e}=s;e.transformOrigin||(e.transformOrigin=`${-i}px ${-c}px`),e.transform=`scale(${a}) matrix(${t.a}, ${t.b}, ${t.c}, ${t.d}, ${t.e-l.left}, ${t.f-l.top}) translateZ(0.0001px)`;break}}}}}}),!1!==n&&Array.from(e.querySelectorAll("iframe"),({contentWindow:t})=>{null==t||t.postMessage(`${d}${n}`,"null"===window.origin?"*":window.origin)})}function w({once:t=!1,target:e=document}={}){const i=function(t=document){if(t[h])return t[h];let e=!0;const i=()=>{e=!1,delete t[h]};Object.defineProperty(t,h,{configurable:!0,value:i});let n=[],s=!1;(async()=>{try{n=await p()}finally{s=!0}})();const r=()=>{for(const e of n)e({target:t});s&&0===n.length||e&&window.requestAnimationFrame(r)};return r(),i}(e);return t?(i(),()=>{}):i}m=1,u=void 0;const b=Symbol(),y=(e=document)=>{if("undefined"==typeof window)throw new Error("Marp Core's browser script is valid only in browser context.");if(((e=document)=>{const i=window[a];i||customElements.define("marp-auto-scaling",s);for(const n of Object.keys(t)){const s=`marp-${n}`,o=t[n].proto();l()&&o!==HTMLElement?i||customElements.define(s,r(o,{style:t[n].style}),{extends:n}):(i||customElements.define(s,r(HTMLElement,t[n])),e.querySelectorAll(`${n}[is="${s}"]`).forEach(t=>{t.outerHTML=t.outerHTML.replace(new RegExp(`^<${n}`,"i"),`<${s}`).replace(new RegExp(`</${n}>$`,"i"),`</${s}>`)}))}window[a]=!0})(e),e[b])return e[b];const i=w({target:e}),n=()=>{i(),delete e[b]},o=Object.assign(n,{cleanup:n,update:()=>y(e)});return Object.defineProperty(e,b,{configurable:!0,value:o}),o},f=document.currentScript;y(f?f.getRootNode():document)}();
 </script></foreignObject></svg></div><script>/*!! License: https://unpkg.com/@marp-team/marp-cli@4.3.1/lib/bespoke.js.LICENSE.txt */

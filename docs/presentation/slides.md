@@ -246,3 +246,30 @@ Rule-based deobfuscation preprocessor: **zero retraining, ~76% recovery on trans
 **3.** A free preprocessor recovers 76% of obfuscation loss on transformers.
 
 **Repo:** `github.com/ArthurBabkin/GenAI-Safety-Fliter` · full report in `docs/final/final.md`
+
+---
+
+## Team contributions
+
+<div class="cols">
+<div>
+
+### Arthur Babkin
+
+- Collected data, prepared dataset
+- Baseline TF-IDF implementation
+- Ablation 2 (class weighting)
+- Ablation 3 (LoRA vs full FT @ 90K)
+
+</div>
+<div>
+
+### Alexander Malyy
+
+- Baseline DistilBERT + LoRA implementation
+- Code refactor, unified methodology
+- Ablation 1 (class imbalance)
+- Ablation 4 (robustness + deobfuscation)
+
+</div>
+</div>
