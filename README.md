@@ -1,20 +1,26 @@
-# GenAI Safety Filter
+# NLP Case Study 2.6 — Parameter-Efficient Transformer Fine-tuning
 
-Fast and resource-efficient toxic-text classifiers benchmarked on a bilingual (Russian + English) social-media corpus. LLM output moderation is a motivating deployment scenario but was not evaluated directly; see the final report §7 for scope and limitations.
+**Author:** Arthur Babkin | **Course:** NLP, Spring 2026, Innopolis University
 
-**Team:** Arthur Babkin, Alexander Malyy | **Course:** Generative AI, Spring 2026
+*Alexander Malyy (Generative AI course, same university) assisted with select tasks, as the topic overlaps with that course.*
 
 ## Overview
 
-Systematic comparison of classical and neural safety filters for toxic text detection. Three models evaluated on 460K multilingual samples (56% Russian, 44% English):
+Case Study 2.6: apply LoRA adapters to specialize small pretrained transformers for a niche domain corpus and document the trade-offs between adaptation speed, GPU memory footprint, and downstream quality.
 
-| Model | F1 (tuned) | Latency | Throughput |
-|-------|-----------|---------|------------|
+Two experiments on a bilingual (56% Russian, 44% English) toxic-text corpus of 460K samples:
+
+**Exp 1 — Classification:** LoRA vs full fine-tuning vs TF-IDF baseline on toxic-text detection, with 4 ablations (class balancing, weighted loss, data size vs architecture, obfuscation robustness).
+
+| Model | F1 | Latency | Throughput |
+|-------|-----|---------|------------|
 | TF-IDF + LogReg | 0.81 | 0.009 ms | 112K/s |
-| DistilBERT | **0.93** | 3.58 ms | 287/s |
+| DistilBERT full FT | **0.93** | 3.58 ms | 287/s |
 | DistilBERT + LoRA | 0.80 | 4.51 ms | 226/s |
 
-See [final report](docs/final/final.md) for full analysis, ablation studies, robustness evaluation, and deployment recommendations.
+**Exp 2 — Autoregressive LM:** DistilGPT-2 full FT vs LoRA rank sweep (r=4/8/16) on the same corpus. Metrics: perplexity, training time, memory, checkpoint size.
+
+See [poster](docs/nlp-case-study-poster/poster.pdf) for full results, ablation studies, robustness evaluation, and conclusions.
 
 ## Setup
 
@@ -27,6 +33,7 @@ git lfs install
 # 2. Clone + hydrate LFS
 git clone https://github.com/ArthurBabkin/GenAI-Safety-Fliter.git
 cd GenAI-Safety-Fliter
+git checkout nlp-case-study   # NLP case study branch
 git lfs pull   # downloads data/**/*.csv and binary checkpoints
 
 # 3. Python env
@@ -111,6 +118,9 @@ GenAI-Safety-Fliter/
 │   ├── promote.py                       # CLI: python -m model.promote
 │   └── experiments/
 │       ├── ablation_rules.md            # Protocol for creating ablations
+│       ├── lm_perplexity/
+│       │   ├── data/                    # data models and logs for case study
+│       │   └── lm_perplexity.ipynb  
 │       ├── robustness/                  # Obfuscation stress test + deobfuscation defense
 │       │   ├── robustness.ipynb
 │       │   └── run_evaluation.py        # CLI: python -m model.experiments.robustness.run_evaluation
